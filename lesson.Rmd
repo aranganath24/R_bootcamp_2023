@@ -1,0 +1,37 @@
+---
+title: "An Introduction to Data Analysis in R"
+author: "Aditya Ranganath"
+date: "12/31/2022"
+output:
+  html_document:
+        toc: true
+        toc_depth: 3
+        toc_float: true
+        number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+
+# A Tour of R Studio
+
+# R Foundations for Data Analysis
+
+# Applied Data Analysis
+
+## Data Transfer
+
+## Numeric Data Processing and Manipulation
+
+## Text Data Processing and Manipulation
+
+## Data Visualization
+
+## Automating Data Tasks
+
+
+
+
