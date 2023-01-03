@@ -17,6 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, echo=F, warning=F, message=F}
 library(tidyverse)
 library(wosr)
+library(DT) 
 ```
 
 # Introduction
@@ -139,21 +140,282 @@ library(wosr)
 
 At this point, the packages are loaded and ready to go! One important thing to note regarding the installation and loading of packages is that we only have to install packages once; after a package is installed, there is no need to subsequently reinstall it. However, we must load the packages we need (using the ```library``` function) every time we open a new R session. In other words, if we were to close RStudio at this point and open it up later, we would **not** need to install these packages again, but **would** need to load the packages again.  
 
-# R Foundations for Data Analysis
+# Part 1: Foundations for Data Analysis in R
 
-Before we can get a sense of how to work with data in R, it is important to familiarize ourselves with basic features of the R language's syntax, 
+Before we can get a sense of how to work with data in R, it is important to familiarize ourselves with basic features of the R language's syntax, and the basic data structures that are used to store and process data. 
+
+## R as a Calculator
+
+At its most basic, R can be used as a calculator. For instance: 
+
+```{r}
+# calculates 2+2
+2+2
+```
+
+```{r}
+# calculates 65 to the power of 4
+65^4
+```
+
+While this is a useful starting point, the possibility of assigning values to objects (or variables) considerably increases the scope of the operations we are able to carry out. We turn to object assignment in the next sub-section. 
 
 ## Object assignment and manipulation
 
+The concept of object (or variable) assignment is a fundamental concept when working in a scripting environment; indeed, the ability to easily assign values to objects is what allows us to easily and intuitively manipulate and process our data in a programmatic setting. To better understand the mechanics of object assignment, consider the following:
+
+```{r}
+# assign value 5 to new object named x
+x<-5
+```
+
+In the code above, we use R's assignment operator, ```<-```, to assign the value 5 to an object named ```x```. Now that an object named ```x``` has been created and assigned the value 5, printing ```x``` in our console (or printing ```x``` in our script and running it) will return the value that has been assigned to the ```x``` object, i.e. 5: 
+
+```{r}
+# prints value assigned to "x"
+x
+```
+
+More generally, the process of assignment effectively equates the output created by the code on the right side of the assignment operator (```<-```) to an object with a name that is specified on the left side of the assignment operator. Whenever we want to look at the contents of an object (i.e. the output created by the code to the right side of the assignment operator), we simply print the name of the object in the R console (or print the name and run it within a script). 
+
+Let's create another object, named ```y```, and assign it the value "12": 
+
+```{r}
+# assign value 12 to new object named y
+y<-12
+```
+
+As we noted above, we can print the value that was assigned to ```y``` by printing its name:
+
+```{r}
+# prints value assigned to "y"
+y
+```
+
+It's possible to use existing objects to assign values to new ones. For example, we can assign the sum of ```x``` and ```y``` to a new object that we'll name ```xy_sum```: 
+
+```{r}
+# creates a new object, named "xy_sum" whose value is the sum of "x" and "y"
+xy_sum<-x+y
+```
+
+Now, let's print the contents of ```xy_sum```
+
+```{r}
+# prints contents of "xy_sum"
+xy_sum
+```
+
+As expected, we see that the value assigned to ```xy_sum``` is "17" (i.e. the sum of the values assigned to ```x``` and ```y```). 
+
+It is possible to change the value assigned to a given object. For example, let's say we want to change the value assigned to ```x``` from "5" to "8":
+
+```{r}
+# assign value of "8" to object named "x"
+x<-8
+```
+
+We can now confirm that ```x``` is now associated with the value "8"
+
+```{r}
+# prints updated value of "x"
+x
+```
+
+It's worth noting that updating the value assigned to ```x``` will not automatically update the value assigned to ```xy_sum``` (which, recall, is the sum of ```x``` and ```y```). If we print the value assigned to ```xy_sum```, note that it is still "17"): 
+
+```{r}
+xy_sum
+```
+
+In order for the value assigned to ```xy_sum``` to be updated with the new value of ```x```, we must run the assignment operation again:
+
+```{r}
+# assigns sum of "y" and newly updated value of "x" to "xy_sum" object
+xy_sum<-x+y
+```
+
+Now, the value of ```xy_sum``` should reflect the updated value of ```x```, which we can confirm by printing the value of ```xy_sum```:
+
+```{r}
+# prints value of "xy_sum"
+xy_sum
+```
+
+Note that the value assigned to ```xy_sum``` is now "20" (the sum of "8" and "12"), rather than "17" (the sum of "5" and "12").
+
+While the examples above were very simple, we can assign virtually any R code, and by extension, the data structure(s) generated by that code (such as datasets, vectors, graphs/plots etc.) to an R object. When naming your objects, try to be descriptive, so that the name of the object signifies something about its corresponding value. 
+
+Below, consider a simple example of an object, named ```our_location``` that has been assigned a non-numeric value. It's value is a string, or textual information:
+
+```{r}
+our_location<-"Boulder, CO"
+```
+
+We can print string that has been assigned to the ```location``` object by typing the name of the object in our console, or running it from our script:
+
+```{r}
+# prints value of "our_location" object
+our_location
+```
+
+Note that generally speaking, you have a lot of flexibility in naming your R objects, but there are certain rules. For example, object names must start with a letter, and cannot contain any special symbols (they can only contain letters, numbers, underscores, and periods). Also, object names cannot contain multiple unconnected words; if you'd like to use multiple words or phrases, connect the discrete elements with an underscore (```_```), or use camel case (where different words are distinguished by beginning each discrete word begins with a capitalized letter). 
+
+It is also worth emphasizing that object names are case sensitive; in order to print the value assigned to an object, that object's name must be printed *exactly* as it was created. For example, if we were to type ```our_Location```, we would get an error, since there is no ```our_Location``` object (only an ```our_location``` object):
+
+```{r, error=TRUE}
+our_Location
+```
+
 ## Data structures
+
+We now turn to a brief overview of some important data structures that help us to work with data in R. We will consider three data structures that are particularly useful: vectors, data frames, and lists. Note that this is not an exhaustive treatment of data structures in R; there are other structures, such as matrices and arrays, that are also important. However, we will limit our discussion to the data structures that are essential for getting started with data-based research in R. 
+
+## Vectors
+
+In R, a vector is a sequence of values. A vector is created using the ```c()``` function. For example, let's make a vector with some arbitrary numeric values:
+
+```{r}
+# makes vector with values 5,7,55,32
+c(5, 7, 55, 32)
+```
+
+If we plan to work with this numeric vector again later in our workflow, it makes sense to assign it to an object, which we'll call ```arbitrary_values```:
+
+```{r}
+# assigns vector of arbitrary values to new object named "arbitrary_values"
+arbitrary_values<-c(5,7,55.6,32.5)
+```
+
+Now, whenever we want to print the vector assigned to the ```arbitrary_values``` object, we can simply print the name of the object:
+
+```{r}
+# prints vector assigned to "arbitrary_values" object
+arbitrary_values
+```
+
+It is possible to carry out mathematical operations with numeric vectors; for instance, let's say that we want to double the values in the ```arbitrary_values``` vector; to do so, we can simply multiply ```arbitrary_values``` by 2, which yields a new vector where each numeric element is twice the corresponding element in ```arbitrary_values```. Below, we'll create a new vector that doubles the values in ```arbitrary_values```, assign it to a new object named ```arbitrary_values_2x```, and print the contents of ```arbitrary_values_2x```:
+
+```{r}
+# creates a new vector that doubles the values in "arbitrary_values" and assigns it to a new object named 
+"arbitrary_values_2x"
+arbitrary_values_2x<-arbitrary_values*2
+
+# prints contents of "arbitrary_values_2x"
+arbitrary_values_2x
+```
+
+Now, let's say we want to add different vectors together; the code below creates a new vector by adding together ```arbitrary_values``` and ```arbitrary_values_2x```:
+
+```{r}
+arbitrary_values + arbitrary_values_2x
+```
+
+Note that each element of the resulting vector printed above is the sum of the corresponding elements in ```arbitrary_values``` and ```arbitrary_values_2x```.
+
+Other arithmetic operations on numeric vectors are also possible, and you may wish to explore these on your own as an exercise. 
+
+In many cases, it is useful to extract a specific element from a vector. Each element in a given vector is assigned an index number, starting with 1; that is, the first element in a vector is assigned an index value of 1, the second element of a vector is assigned an index value of 2, and so on. We can use these index values to extract our desired vector elements. In particular, we can specify the desired index within square brackets after printing the name of the vector object of interest. For example, let's say we want to extract the 3rd element of the vector in ```arbitrary_values```. We can do so with the following:
+
+```{r}
+# extracts third element of "arbitrary_values_2x" vector
+arbitrary_values[3]
+```
+
+It is also possible to extract a range of values from a vector using index values. For example, let's say we want to extract a new vector comprised of the second, third, and fourth numeric elements in ```arbitrary_values```; we can do so with the following:
+
+```{r}
+# extracts a new vector comprised of the 2nd, 3rd, and 4th elements of the existing "arbitrary_values" vector
+arbitrary_values[2:4]
+```
+
+Thus far, we have been working with numeric vectors, where each of the vector's elements is a numeric value, but it is also possible to create vectors in which the elements are strings (i.e. text). Such vectors are know as character vectors. For example, the code below creates a character vector of the first four months of the year, and assigns it to a new object named ```months_four```:
+
+```{r}
+# creates character vector whose elements are the first four months of the year, and assigns the vector to a new object named "months_four"
+months_four<-c("January", "February", "March", "April")
+```
+
+Let's now print the character vector assigned to ```months_four```: 
+
+```{r}
+# prints contents of "months_four"
+months_four
+```
+
+We can extract elements from character vectors using index values in the same way we did so for elements in a numeric vector. For example:
+
+```{r}
+# extracts second element of "months_four" object (i.e. the "February" string)
+months_four[2]
+```
+
+```{r}
+# subsets the second and third elements of "months_four" object (i.e. the "February" and "March" strings, which are extracted as a new character vector)
+months_four[2:3]
+```
+
+## Data frames
+
+The data frame structure is the workhorse of data analysis in R. A data frame resembles a table, of the sort you might generate in a spreadsheet application. 
+
+Often, the most important (and arduous) step in a data analysis workflow is to assemble disparate strands of data into a tractable data frame. What does it mean for a data frame to be "tractable"? One way to define this concept more precisely is to appeal to the concept of "tidy" data, which is [often referenced in the data science world](https://vita.had.co.nz/papers/tidy-data.pdf). Broadly speaking, a "tidy" data frame is a table in which:
+
+1. Each variable has its own column
+2. Each observation has its own row
+3. Each value has its own cell
+
+We will work extensively with data frames later in the workshop, but let's generate a simple data frame from scratch, and assign it to a new object. We will generate a data frame containing "dummy" country-level data on basic economic, geographic, and demographic variables, and assign it to a new object named ```country_df```. The data frame is created through the use of the ```data.frame()``` function, which has already been programmed into R. Column names and their corresponding values are passed to the ```data.frame()``` function in the manner below:
+
+```{r}
+# Creates a dummy country-level data frame 
+country_df<-data.frame(Country=c("Country A", "Country B", "Country C"),
+                       GDP=c(8000, 30000, 23500),
+                       Population=c(2000, 5400, 10000),
+                       Continent=c("South America", "Europe", "North America"))
+```
+
+```{r}
+country_df
+```
+
+```{r, echo=F}
+country_df %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
+  deferRender = TRUE,
+  scrollY = 350,
+  scrollX = 350,
+  dom = "t",
+  scroller = TRUE,
+  fixedColumns = list(leftColumns = 3)
+))
+```
+
+
+
+
+view function
+
+### Lists
+
+identifying data structure
+
+
 
 ## Functions
 
 ## Iteration
 
-# Applied Data Analysis
+# Part 2: Applied Data Analysis
 
 ## Data Transfer
+
+### reading in a dataset from your disk
+
+### reading in multiple datasets from your disk
+
+### reading in a dataset from cloud storage
+
+### extracting data from the web
 
 setting working directory
 
