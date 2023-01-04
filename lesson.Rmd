@@ -365,7 +365,7 @@ Often, the most important (and arduous) step in a data analysis workflow is to a
 2. Each observation has its own row
 3. Each value has its own cell
 
-We will work extensively with data frames later in the workshop, but let's generate a simple data frame from scratch, and assign it to a new object. We will generate a data frame containing "dummy" country-level data on basic economic, geographic, and demographic variables, and assign it to a new object named ```country_df```. The data frame is created through the use of the ```data.frame()``` function, which has already been programmed into R. Column names and their corresponding values are passed to the ```data.frame()``` function in the manner below:
+We will work extensively with data frames later in the workshop, but let's generate a simple data frame from scratch, and assign it to a new object. We will generate a data frame containing "dummy" country-level data on basic economic, geographic, and demographic variables, and assign it to a new object named ```country_df```. The data frame is created through the use of the ```data.frame()``` function, which has already been programmed into R. Column names and the corresponding column values are passed to the ```data.frame()``` function in the manner below, and the function effectively binds these different columns together into a table:
 
 ```{r}
 # Creates a dummy country-level data frame 
@@ -375,8 +375,18 @@ country_df<-data.frame(Country=c("Country A", "Country B", "Country C"),
                        Continent=c("South America", "Europe", "North America"))
 ```
 
+To observe the structure of the table, we can print it to the R console by simply printing the name of the object to which it has been assigned:
+
 ```{r}
+# prints "country_df" data frame to console
 country_df
+```
+
+One nice feature of R Studio is that instead of simply printing our data frames into the console, we can view a nicely formatted version of our data frame by passing the name of the data frame object through the ```View()``` function. For example, the code below will bring up the ```country_df``` data frame as a new tab in R Studio:
+
+```{r}
+# pulls up "country_df" data frame in R Studio data viewer
+View(country_df)
 ```
 
 ```{r, echo=F}
@@ -390,24 +400,123 @@ country_df %>% datatable(extensions=c("Scroller", "FixedColumns"), options = lis
 ))
 ```
 
+Note the "tidy" features of this simple data frame: 
 
+1. Each of the variables (i.e. GDP, Population, Continent) has its own column
+2. Each of the (country-level) observations has its own row
+3. Each of the values (i.e. country-level information about a given variable) has its own distinct cell
 
-
-view function
+We will explore data frames, and the process of extracting information from them, at greater length in subsequent sections. 
 
 ### Lists
 
-identifying data structure
+In R, a list is a data structure that allows us to conveniently store a variety of different objects, of various types. For example, we can use a list to vectors, data frames, visualizations and graphs--basically any R object you can think of! It is also possible to store a list within a list. 
 
+Lists allow us to keep track of the various objects we create, and are therefore a useful data management tool. In addition, lists are very helpful to use when we want to perform iterative operations across multiple objects. 
 
+We can create lists in R using the ```list()``` function; the arguments to this function are the objects that we want to include in the list. In the code below, we'll create a list (assigned to an object named ```example_list```) that contains some of the objects we create earlier in the lesson: the ```arbitrary_values``` vector, the ```months_four``` vector, and the ```country_df``` data frame. 
+
+```{r}
+# creates list whose elements are the "arbitrary_values" numeric vector, the "months_four" character vector, and the "country_df" data frame, and assigns it to a new object named "example_list"
+example_list<-list(arbitrary_values, months_four, country_df)
+```
+
+Now that we've created our list object, let's print out its contents:
+
+```{r}
+# prints contents of "example_list"
+example_list
+```
+
+As you can see, our list contains each of the various specified objects within a single, unified structure. We can access specific elements within a list using the specific index number of the desired element, in much the same way we did for vectors. When extracting a single list element from a list, the convention is to enclose the index number of the desired list element in double square brackets. For example, if we want to extract the country-level data frame from ```example_list```, we can use the following:
+
+```{r}
+# extracts country-level data frame from "example_list"; the country-level data frame is the third element in "example_list"
+example_list[[3]]
+```
+
+If we want to subset a list, and extract more than one list element as a separate list, we can do so by creating a vector of the index values of the desired elements, and enclosing it in single brackets after the name of the list object. For example, if we wanted to generate a new list that contained only the first and third elements of ```example_list``` (the numeric vector of arbitrary values and the data frame), we would use the following syntax:
+
+```{r}
+example_list[c(1,3)]
+```
+
+While list elements are not automatically named, we can name our list element using the ```names()``` function. The first step to define a character vector of desired names. We can specify any names we'd like but for the sake of illustration, let's say we want to name the first list element "element1", the second list element "element2", and the third list element "element3". Let's create a vector of our desired names, and assign it to an object named ```name_vector```:
+
+```{r}
+# creates a character vector of desired names for list elements, and assigns it to a new object named "name_vector"
+name_vector<-c("element1", "element2", "element3")
+```
+
+Now, we'll assign these names in ```name_vector``` to the list elements in ```example_list``` with the following
+
+```{r}
+# assigns names from "name_vector" to list elements in "example_list"
+names(example_list)<-name_vector
+```
+
+Let's now print the contents of ```example_list```:
+
+```{r}
+# prints contents of "example_list"
+example_list
+```
+
+Note that the list elements now have names attached to them; the first character string in ```name_vector``` is assigned as the name of the first element in ```example_list```, the second character string in ```name_vector``` is assigned as the name of the second element in ```example_list```, and so on. 
+
+Practically speaking, we can now extract list elements using the assigned names. For example, if we want to extract the data frame from ```example_list```, we could do so by its assigned name ("element3"), as follows:
+
+```{r}
+# Extracts the data frame from "example_list" by its assigned name
+example_list[["element3"]]
+```
+
+Note that even after assigning names to list elements, you can still extract elements by their index value, if you would prefer to do so:
+
+```{r}
+# # Extracts the "element3" data frame from "example_list" by its index number
+example_list[[3]]
+
+```
+
+### Identifying data structures
+
+It is useful to be able to quickly identify the data structure of a given object. Indeed, one way that things can go wrong when processing or analyzing data in R is that a given function expects a certain type of data structure as an input, but encounters something else, which will cause the function to throw an error or perform unexpectedly. In such circumstances, it is especially useful to be able to quickly double-check the data structure of a given object. 
+
+We can quickly ascertain this information by passing a given object as an argument to the ```class()``` function, which will provide information about the object's data structure.
+
+For example, let's say we want to confirm that ```example_list``` is indeed a list:
+
+```{r}
+# print the data structure of the "example_list" object
+class(example_list)
+```
+
+Let's take another example:
+
+```{r}
+# print the data structure of the "months_four" object
+class(months_four)
+```
+
+Note that we can read "character", as "character vector". 
+
+Similarly, we can read "numeric" as "numeric vector":
+
+```{r}
+# print the data structure of the "arbitrary_values" object
+class(arbitrary_values)
+```
 
 ## Functions
+
+
 
 ## Iteration
 
 # Part 2: Applied Data Analysis
 
-## Data Transfer
+## Data Transfer Part 1: Reading in Data
 
 ### reading in a dataset from your disk
 
