@@ -271,7 +271,7 @@ our_Location
 
 We now turn to a brief overview of some important data structures that help us to work with data in R. We will consider three data structures that are particularly useful: vectors, data frames, and lists. Note that this is not an exhaustive treatment of data structures in R; there are other structures, such as matrices and arrays, that are also important. However, we will limit our discussion to the data structures that are essential for getting started with data-based research in R. 
 
-## Vectors
+### Vectors
 
 In R, a vector is a sequence of values. A vector is created using the ```c()``` function. For example, let's make a vector with some arbitrary numeric values:
 
@@ -355,7 +355,7 @@ months_four[2]
 months_four[2:3]
 ```
 
-## Data frames
+### Data frames
 
 The data frame structure is the workhorse of data analysis in R. A data frame resembles a table, of the sort you might generate in a spreadsheet application. 
 
@@ -510,9 +510,87 @@ class(arbitrary_values)
 
 ## Functions
 
+As we mentioned earlier, a function is  a programming construct that takes a set of inputs (also known as arguments), manipulates those inputs/arguments in a specific way (the body of the function), and returns an output that is the product of how those inputs are manipulated in the body of the function. It is much like a recipe, where the recipe's ingredients are analogous to a function's inputs, the instructions about how to combine and process those ingredients are analogous to the body of the function, and the end product of the recipe (for example, a cake) is analogous to the function's output. R packages are essentially pre-written collections of functions organized around a given theme, and for a large number of data processing and analysis tasks, one can rely on these pre-written functions. In some cases, however, you may want to write your own functions from scratch. 
 
+Why might you want to write your own functions?
+
+* Sometimes, there won't be a convenient pre-programmed function available to accomplish a given task, which will require you to write your own custom function. 
+* Writing your own functions will allow you to automate your workflows
+* Writing functions will allow you to write more concise and readable code.
+
+Writing your own functions can be challenging, but this section will provide you with some basic intuition for how the process works. To develop this intuition, we'll use a very simple example. 
+
+Let's say you have a large collection of temperature data, measured in Fahrenheit, and you want to convert these data to Celsius. Recall that the formula to convert from Fahrenheit to Celsius is the following, where "C" represents temperature in Celsius, and "F" represents temperature in Fahrenheit: 
+
+```{r, eval=F}
+# fahrenheit to Celsius formula, where "F" is fahrenheit input
+C=(F-32)*(5/9)
+```
+
+Recall that at its most basic level, R is a calculator; if for example, we have a Fahrenheit measurement of 55 degrees, we can convert this to Celsius by plugging 55 into the conversion formula:
+
+```{r}
+# Converts 55 degrees fahrenheit to Celsius
+(55-32)*(5/9)
+```
+
+This is easy enough, but if we have a large amount of temperature data that requires processing, we wouldn't want to carry out this calculation using arithmetic operators for each measurement in our data collection; that could quickly become unwieldy and tedious. Instead of repeatedly using arithmetic operators, we can wrap the Fahrenheit-to-Celsius conversion formula into a function:
+
+```{r}
+# Generates function that takes fahrenheit value ("fahrenheit_input") and returns a value in Celsius, and assigns the function to an object named "fahrenheit_to_celsius_converter"
+fahrenheit_to_celsius_converter<-function(fahrenheit_input){
+  celsius_output<-(fahrenheit_input-32)*(5/9)
+  return(celsius_output)
+}
+```
+
+Let's unpack the code above, which we used to create our function:
+
+* We declare that we are creating a new function with the word ```function```; within the parenthesis after ```function```, we specify the function's argument(s). Here, the function's argument is an input named ```fahrenheit_input```. The name of the argument(s) is arbitrary, and can be anything you like; ideally, its name should be informed by relevant context. Here, the argument/input to the function is a temperature value expressed in degrees Fahrenheit, so the name "fahrenheit_input" describes the nature of this input. 
+* After enclosing the function's arguments within parentheses, we print a right-facing curly brace ```{```, and then define the body of the function (i.e. the recipe), which specifies how we want to transform this input. In particular, we take ```fahrenheit_input```, subtract 32, and then multiply by 5/9, which transform the input to the celsius temperature scale. We'll tell R to assign this transformed value to a new object, named ```celsius_output```. 
+* In the function's final line, ```return(celsius_output)```, we specify the value we want the function to return. Here, we are saying that we want the function to return the value that was assigned to ```celsius_output```. We then close the function by typing a left-facing curly brace below the return statement ```}```.
+* Just as we can assign data or visualizations to objects that allow us to subsequently retrieve the outputs of our code, so too with functions. Here, we'll assign the function we have just return to an object named ```fahrenheit_to_celsius_converter```. 
+
+After creating our function by running that code, we can use the newly created ```fahrenheit_to_celsius``` function to perform our Fahrenheit to Celsius transformations. Let's say we have a Fahrenheit value of 68, and want to transform it to Celsius. Instead of the following calculation:
+
+```{r}
+# Uses arithmetic operation to convert 68 degrees Fahrenheit to Celsius
+(68-32)*(5/9)
+```
+
+We can use our function:
+
+```{r}
+# Uses "fahrenheit_to_celsius_converter" function to convert 68 degrees Fahrenheit to Celsius
+fahrenheit_to_celsius_converter(fahrenheit_input=68)
+```
+
+Above, we passed the argument "fahrenheit_input=68" to the ```fahrenheit_to_celsius_converter``` function that we created; the function then took this value (68), plugged it into "fahrenheit_input" within the function and assigned the resulting value to "celsius_output"; it then returned the value of "celsius_output" (20) back to us. 
+
+Let's try another one: 
+
+```{r}
+fahrenheit_to_celsius_converter(fahrenheit_input=22)
+```
+
+In short, we can specify any value for the "fahrenheit_input" argument; this value will be substituted for "fahrenheit_input" in the expression ```celsius_output<-(fahrenheit_input-32)*(5/9)```, after which the value of ```celsius_output``` will be returned to us. 
+
+Even though the Fahrenheit to Celsius conversion formula is not particularly complex, it is clear that writing a function to perform this calculation is nonetheless more efficient than repeatedly performing the relevant arithmetic operation. As the operations you need to perform on your data become more complex, and the number of times you need to perform those operations increases, the benefits of wrapping those operations into a function become ever-more apparent. 
 
 ## Iteration
+
+Once we have a function written down, it is straightforward to apply that function to multiple inputs in an iterative fashion. For example, let's say you have four different Fahrenheit temperature values that you would like to convert to celsius, using the ```fahrenheit_to_celsius_converter``` we developed above. One option would be to apply the ```fahrenheit_to_celsius_converter``` function to each of the Fahrenheit temperature inputs individually. For example, let's say our Fahrenheit values, which we'd like to convert to celsius, are the following: 45.6, 95.9, 67.8, 43. We could, of course, run these values through the function individually, as below:
+
+```{r}
+fahrenheit_to_celsius_converter(fahrenheit_input=45.6)
+
+fahrenheit_to_celsius_converter(fahrenheit_input=95.9)
+
+fahrenheit_to_celsius_converter(fahrenheit_input=67.8)
+
+fahrenheit_to_celsius_converter(fahrenheit_input=43.)
+```
+
 
 # Part 2: Applied Data Analysis
 
