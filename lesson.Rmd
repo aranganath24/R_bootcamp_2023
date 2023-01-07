@@ -591,6 +591,128 @@ fahrenheit_to_celsius_converter(fahrenheit_input=67.8)
 fahrenheit_to_celsius_converter(fahrenheit_input=43.)
 ```
 
+This is manageable with a collection of only four Fahrenheit values, but would quickly become tedious if you had a substantially larger set of Fahrenheit temperature values that required conversion. Instead of  manually applying the function to each individual input value, we can instead put these values into a vector, and then iteratively apply the ```fahrenheit_to_celsius_converter``` function to each of these vector elements. 
+
+Let's first assign our Fahrenheit temperature values to a numeric vector object named ```fahrenheit_input_vector```: 
+
+```{r}
+fahrenheit_input_vector<-c(45.6, 95.9, 67.8, 43)
+```
+
+Our goal is to also iteratively apply our function to all of these vector elements, and deposit the transformed results into a new vector.  In programming languages, functions are typically applied to to multiple inputs in an iterative fashion using a construct known as a for-loop, which some of you may already be familiar with. R users also frequently use specialized functions (instead of for-loops) to iterate over elements; this is often faster, or at the very least, makes R scripts more readable. One family of these iterative functions is the "Apply" family of functions. A more recent set of functions that facilitate iteration is part of the *tidyverse*, and is found within the [*purrr*](https://purrr.tidyverse.org/) package. These functions are known as ```map()``` functions, and we will use them here to iteratively apply our functions to multiple inputs. 
+
+Let's see how we can use a ```map()``` function to sequentially apply the ```fahrenheit_to_celsius_converter()``` function we created to several different values for the "fahrenheit_input" argument, contained in ```fahrenheit_input_vector```. We'll pass ```fahrenheit_input_vector``` as the first argument to the  ```map_dbl()``` function, and ```fahrenheit_to_celsius_converter``` (i.e. the function we want to apply iteratively to the elements in `the```fahrenheit_input_vector``` ) as the second argument. The result of this operation will be a new "results vector", containing the transformed temperature values for each input in the original vector of Fahrenheit values (```fahrenheit_input_vector```). We'll assign this result/output vector to a new object named ```celsius_outputs_vector```: 
+
+```{r}
+# Iteratively applies the "fahrenheit_to_celsius_converter" to celsius input values in "fahrenheit_input_vector" and assigns the resulting vector of converted temperature values to "celsius_ouputs_vector"
+celsius_outputs_vector<-map_dbl(fahrenheit_input_vector, fahrenheit_to_celsius_converter)
+```
+
+In short, the code above takes ``fahrenheit_input_vector``` (i.e. a vector with the numbers 45.6, 95.9, 67.8, 43), and runs each of these numbers through the ```fahrenheit_converter()``` function, and sequentially deposits the transformed result to the newly created ```celsius_outputs_vector()``` object, which contains the following elements:
+
+```{r}
+# prints contents of "celsius_outputs_vector"
+celsius_outputs_vector
+```
+
+More explicitly, the code that reads ```celsius_outputs_vector<-map_dbl(fahrenheit_input_vector, fahrenheit_converter)``` did the following:
+
+1. Pass 45.6 (the first element in the input vector, ```fahrenheit_input_vector```) to the ```fahrenheit_converter()``` function, and place the output (7.555556) as the first element in a new vector of transformed values, named ```celsius_outputs_vector```.
+2. Pass 95.9 (the second element in the input vector, ```fahrenheit_input_vector```) to the ```fahrenheit_converter()``` function, and deposit the output (35.500000) as the second element in ```celsius_outputs_vector```. 
+3. Pass 67.8 (the third element in the input vector,  ```fahrenheit_input_vector```) to the ```fahrenheit_converter()``` function, and deposit the output (19.888889) as the third element in ```celsius_outputs_vector```. 
+4. Pass 43 (the fourth element in the input vector, ```fahrenheit_input_vector```) to the ```fahrenheit_converter()``` function, and deposit the output (6.111111) as the fourth element in ```celsius_outputs_vector```. 
+
+There are a variety of ```map()``` functions from the *purrr* package, and the precise one you should use turns on the number of arguments used by the function (in this example, there is of course only one argument, i.e. "fahrenheit_input"), and the desired class of the output (i.e. numeric vector, character vector, data frame, list etc.). For example, let's say we want to apply the ```fahrenheit_to_celsius_converter``` function iteratively to the input values in ```fahrenheit_input_vector```, but that we want the output values to be stored as a list, rather than as a vector. Instead of using the ```map_dbl()``` function, we can use the ```map()``` function, which always returns outputs as a list. Below, we pass  our input vector (```fahrenheit_input_vector```),  and the function we want to iteratively apply to the elements of the input vector (```fahrenheit_converter```) to the ```map()``` function. We'll assign the output list to a new object named ```celsius_outputs_list```: 
+
+```{r}
+# iteratively applies the "fahrenheit_to_celsius_converter" function to the input values in "fahrenheit_input_vector", and assigns the list of celsius output values to a new object named "celsius_outputs_list"
+celsius_outputs_list<-map(fahrenheit_input_vector, fahrenheit_to_celsius_converter)
+```
+
+Let's print out the list of output values:
+
+```{r}
+# prints contents of "celsius_outputs_list"
+celsius_outputs_list
+```
+
+We can confirm that ```celsius_outputs_list``` is indeed a list using the ```class()``` function that we introduced earlier:
+
+```{r}
+# checks data structure of "celsius_outputs_list"
+class(celsius_outputs_list)
+```
+
+Now, let's say we  we want to organize our information in a data frame, where one column represents our Fahrenheit input values, and the other column represents the corresponding Celsius output values. To do so, we'll first  slightly modify our function to return a data frame:
+
+```{r}
+# Creates function that takes an input value in degrees Fahrenheit (fahrenheit_input), converts this value to Celsius, and returns a data frame with the input Fahrenheit temperature value as one column, and the corresponding Celsius temperature value as another column; the function is assigned to a new object named "fahrenheit_to_celsius_converter_df" 
+fahrenheit_to_celsius_converter_df<-function(fahrenheit_input){
+  celsius_output<-(fahrenheit_input-32)*(5/9)
+  celsius_output_df<-data.frame(fahrenheit_input, celsius_output)
+  return(celsius_output_df)
+}
+```
+
+Now, let's test out this new function for a single "fahrenheit_input" value, to make sure it works as expected; we'll test it out for a value of 63 degrees Fahrenheit:
+
+```{r}
+# applies "fahrenheit_to_celsius_converter_df" function to input value of 63 degrees Fahrenheit
+fahrenheit_to_celsius_converter_df(fahrenheit_input=63)
+```
+
+Having confirmed that the function works as expected, let's now assemble a dataset using multiple Fahrenheit input values, where one column consists of these input values, and the second column consists of the corresponding Celsius outputs. We can do so using the ```map_dfr()``` function from the *purrr* package, which is a cousin of the ```map()``` and ```map_dbl()``` functions we explored above. While the ```map()``` function returns function outputs in a list, and the ```map_dbl()``` function returns function outputs in a numeric vector, the ```map_dfr()``` is used to bind together multiple function outputs rowwise into a data frame. To make this more concrete, let's consider the code below, which uses ```map_dfr()``` to iteratively apply the ```fahrenheit_to_celsius_converter_df``` function to the Fahrenheit values in ```fahrenheit_input_vector```, and assemble the resulting rows into a data frame that is assigned to a new object named ```celsius_outputs_df```:
+
+```{r}
+# Iteratively applies the "fahrenheit_to_celsius_converter_df" function to input values in "fahrenheit_input_vector" to generate a data frame with column of input Fahrenheit values, and column of corresponding output Celsius values; assigns this data frame to a new object named "celsius_outputs_df"
+celsius_outputs_df<-map_dfr(fahrenheit_input_vector, fahrenheit_to_celsius_converter_df)
+```
+
+Let's now print the contents of ```celsius_outputs_df```:
+
+```{r}
+# prints contents of 
+celsius_outputs_df
+```
+
+We now have a dataset with one column consisting of our Fahrenheit inputs (taken from ```fahrenheit_input_vector```), and a second column consisting of our Celsius outputs (derived by applying the ```fahrenheit_to_celsius_converter_df()``` function to our vector of input values, ````fahrenheit_input_vector```). 
+
+We've just covered three different *purrr* functions: ```map()``` (which returns a list), ```map_dbl()``` (which returns a vector), and ```map_dfr()``` (which returns a dataframe). There are other map functions which return different types of objects; you can see a list of these other map functions by inspecting the documentation for the ```map()``` function:
+
+```{r}
+?map
+```
+
+The process of iteratively applying a function with more than one argument is beyond the scope of the workshop, but the same general principles are at work in those cases. If you'd like to explore the process of iteratively applying a function with two arguments, or more than two arguments, check out the documentation for the ```map2()``` and ```pmap()``` functions, respectively.
+
+Before we move into the next section, let's consider one more example of how you can use your own custom-written functions in conjunction with the iteration functions in the *purrr* package to write scripts that can help you to automate tedious tasks. Let's say, for example, that you have temperature values stored in Fahrenheit, for multiple countries, and want to quickly convert those values to degrees Celsius. Suppose that these Fahrenheit values are stored in a series of vectors:
+
+```{r}
+# creates sample country-level Fahrenheit data for Country A
+countryA_fahrenheit<-c(55,67,91,23)
+
+# creates sample country-level Fahrenheit data for Country B
+countryB_fahrenheit<-c(33,45,11,66)
+
+# creates sample country-level Fahrenheit data for Country C
+countryC_fahrenheit<-c(60,55,12,109)
+
+# creates sample country-level Fahrenheit data for Country D
+countryD_fahrenheit<-c(76, 24, 77, 78)
+```
+
+```{r}
+# Creates list of input vectors and assigns this list to new object named "input_list"
+input_list<-list(countryA_fahrenheit, countryB_fahrenheit, countryC_fahrenheit, countryD_fahrenheit) 
+```
+
+
+```{r}
+
+processed_temperature_data_list<-map(input_list, fahrenheit_to_celsius_converter_df)
+```
+
+
 
 # Part 2: Applied Data Analysis
 
@@ -610,7 +732,7 @@ setting working directory
 
 ## Text Data Processing, Manipulation, and Visualization
 
-## Automating Data Tasks
+## Automating Data Processing Tasks
 
 # R Tools for Reproducibility and Communication
 
