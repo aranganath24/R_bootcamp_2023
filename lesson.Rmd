@@ -18,6 +18,9 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(wosr)
 library(DT) 
+library(psych)
+library(fastDummies)
+library(janitor)
 ```
 
 # Introduction
@@ -136,6 +139,9 @@ Now, let's go ahead and load the remainder of the packages that we'll need:
 ```{r, eval=F}
 # loads remainder of required packages
 library(wosr)
+library(psych)
+library(fastDummies)
+library(janitor)
 ```
 
 At this point, the packages are loaded and ready to go! One important thing to note regarding the installation and loading of packages is that we only have to install packages once; after a package is installed, there is no need to subsequently reinstall it. However, we must load the packages we need (using the ```library``` function) every time we open a new R session. In other words, if we were to close RStudio at this point and open it up later, we would **not** need to install these packages again, but **would** need to load the packages again.  
@@ -685,14 +691,16 @@ We've just covered three different *purrr* functions: ```map()``` (which returns
 
 The process of iteratively applying a function with more than one argument is beyond the scope of the workshop, but the same general principles are at work in those cases. If you'd like to explore the process of iteratively applying a function with two arguments, or more than two arguments, check out the documentation for the ```map2()``` and ```pmap()``` functions, respectively.
 
-Before we move into the next section, let's consider one more example of how you can use your own custom-written functions in conjunction with the iteration functions in the *purrr* package to write scripts that can help you to automate tedious tasks. Let's say, for example, that you have temperature values stored in Fahrenheit, for multiple countries, and want to quickly convert those values to degrees Celsius. Suppose that these Fahrenheit values are stored in a series of vectors:
+Before we move into the next section, let's consider one more example of how you can use your own custom-written functions in conjunction with the iteration functions in the *purrr* package to write scripts that can help you to automate tedious tasks. In particular, we'll demonstrate the utility of the list data structure in helping you to carry out such automation tasks. 
+
+Let's say, for example, that you have temperature values stored in Fahrenheit, for multiple countries, and want to quickly convert those country-level values to degrees Celsius. Suppose that these Fahrenheit values are stored in a series of vectors:
 
 ```{r}
 # creates sample country-level Fahrenheit data for Country A
-countryA_fahrenheit<-c(55,67,91,23)
+countryA_fahrenheit<-c(55,67,91,23, 77, 98, 27)
 
 # creates sample country-level Fahrenheit data for Country B
-countryB_fahrenheit<-c(33,45,11,66)
+countryB_fahrenheit<-c(33,45,11,66, 44)
 
 # creates sample country-level Fahrenheit data for Country C
 countryC_fahrenheit<-c(60,55,12,109)
@@ -701,38 +709,369 @@ countryC_fahrenheit<-c(60,55,12,109)
 countryD_fahrenheit<-c(76, 24, 77, 78)
 ```
 
+Let's say that we want to take all of these vectors, and iteratively pass them as arguments to the ```fahrenheit_to_celsius_converter_df```  function, thereby creating four country-specific data frames that have the original Fahrenheit values in one column and the transformed Celsius values in the other column. The easiest way to do this is to first put our input vectors into a list, which we'll assign to a new object named ```temperature_input_list```: 
+
 ```{r}
 # Creates list of input vectors and assigns this list to new object named "input_list"
-input_list<-list(countryA_fahrenheit, countryB_fahrenheit, countryC_fahrenheit, countryD_fahrenheit) 
+temperature_input_list<-list(countryA_fahrenheit, countryB_fahrenheit, countryC_fahrenheit, countryD_fahrenheit) 
 ```
 
+Now, we'll use the ```map()``` function to iteratively pass the vectors in ```temperature_input_list``` as arguments to the ```fahrenheit_to_celsius_converter_df``` function, and deposits the resulting data frames into a list; we'll assign this list that contains the output data frames to a new list object, named ```processed_temperature_data_list```:
 
 ```{r}
-
-processed_temperature_data_list<-map(input_list, fahrenheit_to_celsius_converter_df)
+# Iteratively passes vectors in "temperature_input_list" as arguments to "fahrenheit_to_celsius_converter_df" and deposits the resulting data frames to a list, which is assigned to a new object named "processed_temperature_data_list"
+processed_temperature_data_list<-map(temperature_input_list, fahrenheit_to_celsius_converter_df)
 ```
 
+In effect, the code above takes the ```countryA_fahrenheit``` vector, uses it as the argument to the ```fahrenheit_to_celsius_converter_df``` function, and deposits the resulting data frame as the first element in the ```processed_temperature_data_list``` list; it then takes the ```countryB_fahrenheit``` vector, uses it as the argument to the ```fahrenheit_to_celsius_converter_df``` function, and deposits the resulting data frame as the second element in the ```processed_temperature_data_list``` list; and so on.
 
+Let's print the contents of ```processed_temperature_data_list``` and confirm that our data frames have been created as expected:
+
+```{r}
+# prints contents of "processed_temperature_data_list"
+processed_temperature_data_list
+```
+
+As an exercise, try and extract a given dataset from ```processed_temperature_data_list``` using the indexing method we discussed above. Additionally, see if you can assign names to the list elements in ```processed_temperature_data_list```. 
 
 # Part 2: Applied Data Analysis
 
+The material in Part 1 was not intended as a comprehensive introduction to the R programming language. Its goal, rather, was to present some ideas, concepts, and tools that can serve as a general foundation for working with data in R. Now that we have this basic foundation, we'll turn in this section to a more applied exploration of some actual datasets. Our goal here is to introduce you to some useful functions that will allow you to explore and begin making sense of actual datasets in R. 
+
 ## Data Transfer Part 1: Reading in Data
 
-### reading in a dataset from your disk
+Typically, the first step when working with research data in R Studio is to load your relevant data into memory. There are many ways to do this, and the precise way in which you will do so will depend on where your data is stored, and how it is structured. Below, we'll cover the process of reading your data into R Studio under a couple of different scenarios. 
+
+### Reading in a dataset from a directory on your computer
+
+Often (especially when a dataset is of tractable size), you will have the dataset you would like to analyze stored on a directory on your computer. In order to read in a dataset from a computer directory 
+
+```{r}
+# Reads in Persson/Tabellini Data from local directory
+pt<-read_csv("data/pt/persson_tabellini_workshop.csv")
+```
 
 ### reading in multiple datasets from your disk
 
+```{r}
+# print relevant file names
+wos_files<-list.files("data/wos")
+```
+
+```{r}
+# prints contents of "wos_files"
+wos_files
+```
+
+```{r}
+# Iteratively reads in all individual WOS files from the "data/wos" directory and assigns it to an object named "wos_file_list"
+setwd("data/wos")
+wos_file_list<-map(wos_files, read_csv)
+```
+
+```{r}
+# appends data frames in "wos_file_list" into one data frame and assigns it to a new object named "ws_df_appended"
+ws_df_appended<-bind_rows(wos_file_list)
+```
+
 ### reading in a dataset from cloud storage
+
+```{r}
+# Reads in PT dataset from dropbox and assigns it to a new object named "pt_cloud"
+pt_cloud<-read_csv("https://www.dropbox.com/s/iczslf52s8bzku2/persson_tabellini_workshop.csv?dl=1")
+```
+
+
+### reading in data from an R package
+
+WOSR
 
 ### extracting data from the web
 
-setting working directory
+```{r}
+# Reads in published dataset from CU Scholar and assigns it to a new object named "green_space_CUScholar"
+green_space_CUScholar<-read_csv("https://scholar.colorado.edu/downloads/76537257b.csv")
+```
+
+[Landing Page](https://scholar.colorado.edu/concern/datasets/k643b228n)
+[Download Link](https://scholar.colorado.edu/concern/parent/k643b228n/file_sets/76537257b)
 
 ## Numeric Data Processing, Manipulation, and Visualization
+
+### Make a copy of the dataset
+
+```{r}
+# Make a copy of the dataset so we don't alter the original dataset; then, view
+# the copied dataset 
+pt_copy<-pt
+```
+
+```{r}
+# Print contents of "pt_copy"
+pt_copy
+```
+
+```{r}
+View(pt_copy)
+```
+
+```{r, echo=F}
+pt_copy %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
+  deferRender = TRUE,
+  scrollY = 350,
+  scrollX = 350,
+  dom = "t",
+  scroller = TRUE,
+  fixedColumns = list(leftColumns = 3)
+))
+```
+
+### Summary Statistics
+
+```{r}
+# Generate summary statistics for "pt_copy" and assign to new object named "pt_copy_summarystats1"
+pt_copy_summarystats1<-describe(pt_copy)
+```
+
+```{r}
+# View contents of "pt_copy_summarystats1" in data viewer
+View(pt_copy_summarystats1)
+```
+
+
+```{r, echo=F}
+pt_copy_summarystats1 %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
+  deferRender = TRUE,
+  scrollY = 350,
+  scrollX = 350,
+  dom = "t",
+  scroller = TRUE,
+  fixedColumns = list(leftColumns = 3)
+))
+```
+
+```{r}
+# Creates summary statistics for each continent grouping, and puts results in list named "summary_stats_by_continent"
+summary_stats_by_continent<-describeBy(pt_copy, pt_copy$continent)
+```
+
+```{r}
+# Accessing continent-level summary statistics for africa from the "summary_stats_by_continent" list
+summary_stats_by_continent[["africa"]]
+```
+
+```{r}
+# Group-level summary statistics can be assigned to their own object for easy retrieval
+africa_summary<-summary_stats_by_continent[["africa"]]
+```
+
+
+```{r}
+# Generate a table that displays summary statistics for trade at the continent level and assign to object named "trade_age_by_continent"
+trade_age_by_continent<-pt_copy %>% group_by(continent) %>% 
+                                    summarise(meanTrade=mean(trade),sdTrade=sd(trade),
+                                              meanAge=mean(age), sdAge=sd(age),
+                                              n=n())
+```
+
+```{r}
+# prints contents of "trade_age_by_continent"
+trade_age_by_continent
+```
+
+
+```{r}
+# Creates cross-tab showing the breakdown of federal/non federal across continents
+crosstab_federal_continent<-pt_copy %>% tabyl(federal, continent)
+```
+
+### Basic Data Cleaning and Preparation Tasks
+
+**Rearranging Columns**
+
+```{r}
+# bring the "country" column to the front of the dataset
+pt_copy<-pt_copy %>% relocate(country)
+```
+
+```{r}
+# bring the "country", "list", "trade", "oecd" columns to the front of the dataset
+pt_copy<-pt_copy %>% relocate(country, list, trade, oecd)
+```
+
+```{r, echo=F}
+pt_copy %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
+  deferRender = TRUE,
+  scrollY = 350,
+  scrollX = 350,
+  dom = "t",
+  scroller = TRUE,
+  fixedColumns = list(leftColumns = 3)
+))
+```
+
+**Renaming variables**
+
+
+```{r}
+## Renaming a variable (renames "list" to "party_list")
+pt_copy<-pt_copy %>% rename(party_list=list)
+```
+
+**Sorting a dataset in ascending or descending order with respect to a variable**
+
+```{r}
+# sorting in ascending (low to high) order with respect to the "trade" variable
+pt_copy<-pt_copy %>% arrange(trade)
+```
+
+```{r}
+# sorting in descending (high to low) order with respect to the "trade" variable
+pt_copy<-pt_copy %>% arrange(desc(trade))
+```
+
+**Creating new variables based on existing variables**
+
+```{r}
+# Create new variable named "non_catholic_80" that is calculated by substracting the Catholic share of the population in 1980 ("catho80") from 100  and relocates "country", "catho80", and the newly created "non_catholic_80" to the front of the dataset
+pt_copy<-pt_copy %>% mutate(non_catholic_80=100-catho80) %>% 
+                     relocate(country, catho80, non_catholic_80)
+```
+
+```{r, echo=F}
+# prints updated contents of "pt_copy"
+pt_copy %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
+  deferRender = TRUE,
+  scrollY = 350,
+  scrollX = 350,
+  dom = "t",
+  scroller = TRUE,
+  fixedColumns = list(leftColumns = 3)
+))
+```
+
+**Selecting or Deleting Variables**
+
+```{r}
+# Selects "country", "cgexp", "cgrev", and "trade" variables from the "pt_copy" dataset and assigns the selection to a new object named "pt_copy_selection"
+pt_copy_selection<-pt_copy %>% select(country, cgexp, cgrev, trade, federal)
+```
+
+
+```{r, echo=F}
+# prints updated contents of "pt_copy"
+pt_copy_selection %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
+  deferRender = TRUE,
+  scrollY = 350,
+  scrollX = 350,
+  dom = "t",
+  scroller = TRUE,
+  fixedColumns = list(leftColumns = 3)
+))
+```
+
+```{r}
+# deletes "federal" variable from "pt_copy_selection"
+pt_copy_selection %>% select(-federal)
+```
+
+```{r}
+# deletes "federal" and "trade" from "pt_copy_selection" and assigns it to new object named "pt_copy_selection_modified"
+pt_copy_selection_modified<-pt_copy_selection %>% select(-c(federal, trade))
+```
+
+```{r, echo=F}
+# prints updated contents of "pt_copy"
+pt_copy_selection_modified %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
+  deferRender = TRUE,
+  scrollY = 350,
+  scrollX = 350,
+  dom = "t",
+  scroller = TRUE,
+  fixedColumns = list(leftColumns = 3)
+))
+```
+
+**Recoding Variables**
+
+*Creating Dummy Variables from Continuous Numeric Variables*
+
+
+```{r}
+# Creates a new dummy variable based on the existing "trade" variable named "trade_open" (which takes on a value of "1" if "trade" is greater than or equal to 77, and 0 otherwise) and then moves the newly created variable to the front of the dataset along with "country" and "trade"; all changes are assigned to "pt_copy", thereby overwriting the existing version of "pt_copy"
+
+pt_copy<-pt_copy %>% mutate(trade_open=ifelse(trade>=77, 1, 0)) %>% 
+                     relocate(country, trade_open, trade)
+```
+
+```{r, echo=F}
+pt_copy %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
+  deferRender = TRUE,
+  scrollY = 350,
+  scrollX = 350,
+  dom = "t",
+  scroller = TRUE,
+  fixedColumns = list(leftColumns = 3)
+))
+```
+
+
+*Creating categorical variables from continuous numeric variables*
+
+
+```{r}
+# Creates a new variable in the "pt_copy" dataset named "trade_level" (that is coded as "Low Trade" when the "trade" variable is greater than 15 and less than 50, coded as "Intermediate Trade" when "trade" is greater than or equal to 50 and less than 100, and coded as "High TradE" when "trade" is greater than or equal to 100), and then reorders the dataset such that "country", "trade_level", and "trade" are the first three variables in the dataset
+pt_copy<-pt_copy %>% mutate(trade_level=case_when(trade>15 & trade<50~"Low_Trade",
+                                                  trade>=50 & trade<100~"Intermediate_Trade",
+                                                  trade>=100~"High_Trade")) %>% 
+                    relocate(country, trade_level, trade)
+```
+
+
+```{r, echo=F}
+pt_copy %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
+  deferRender = TRUE,
+  scrollY = 350,
+  scrollX = 350,
+  dom = "t",
+  scroller = TRUE,
+  fixedColumns = list(leftColumns = 3)
+))
+```
+
+*Creating dummmy variables from categorical variables*
+
+```{r, message=FALSE}
+# Creates dummy variables from "trade_level" column, and relocates the new dummies to the front of the dataset
+pt_copy<-pt_copy %>% dummy_cols("trade_level") %>% 
+                      relocate(country, trade_level, trade_level_High_Trade, trade_level_Intermediate_Trade, trade_level_Low_Trade)
+```
+
+```{r, echo=F}
+pt_copy %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
+  deferRender = TRUE,
+  scrollY = 350,
+  scrollX = 350,
+  dom = "t",
+  scroller = TRUE,
+  fixedColumns = list(leftColumns = 3)
+))
+```
+
+
+
+
+
 
 ## Text Data Processing, Manipulation, and Visualization
 
 ## Automating Data Processing Tasks
+
+## Data Transfer Part 2: Exporting Data
+
+### Exporting Visualizations
+
+### Exporting Datasets
 
 # R Tools for Reproducibility and Communication
 
