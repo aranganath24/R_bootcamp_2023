@@ -21,6 +21,8 @@ library(DT)
 library(psych)
 library(fastDummies)
 library(janitor)
+library(tidytext)
+library(wordcloud2)
 ```
 
 # Introduction
@@ -142,6 +144,8 @@ library(wosr)
 library(psych)
 library(fastDummies)
 library(janitor)
+library(tidytext)
+library(wordcloud2)
 ```
 
 At this point, the packages are loaded and ready to go! One important thing to note regarding the installation and loading of packages is that we only have to install packages once; after a package is installed, there is no need to subsequently reinstall it. However, we must load the packages we need (using the ```library``` function) every time we open a new R session. In other words, if we were to close RStudio at this point and open it up later, we would **not** need to install these packages again, but **would** need to load the packages again.  
@@ -1058,12 +1062,121 @@ pt_copy %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
 ))
 ```
 
+**Subsetting Variables**
 
 
+```{r}
+# Extracts OECD observations in "pt_copy" and assigns to object named "oecd_countries"
+oecd_countries<-pt_copy %>% filter(oecd==1) %>% 
+                            relocate(country, oecd)
+```
 
+```{r, echo=F}
+oecd_countries %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
+  deferRender = TRUE,
+  scrollY = 350,
+  scrollX = 350,
+  dom = "t",
+  scroller = TRUE,
+  fixedColumns = list(leftColumns = 3)
+))
+```
 
 
 ## Text Data Processing, Manipulation, and Visualization
+
+```{r}
+# prints ws_df_appended
+ws_df_appended
+```
+
+```{r}
+# selects "Abstract" column from "ws_df_appended" and assigns to new object named "wos_abstracts"
+wos_abstracts<-ws_df_appended %>% select(Abstract)
+```
+
+
+```{r}
+# Tokenizes "Abstract" column text by word; assigns tokenized dataset (with words in "word" column) to a new object named "wos_abstracts_tokenized"
+wos_abstracts_tokenized<-wos_abstracts %>% 
+                          unnest_tokens(input=Abstract,
+                                        token="words",
+                                        output=word)
+```
+
+
+```{r}
+# generates frequency table from "wos_abstracts_tokenized", and assigns 
+wos_abstracts_frequency<-wos_abstracts_tokenized %>% 
+                          count(word, sort=TRUE)
+```
+
+```{r}
+# prints "stop_words" (part of the "tidytext" package)
+stop_words
+```
+
+```{r}
+# cleans "wos_abstracts_frequency" by removing stop words and removing numbers
+wos_abstracts_frequency_cleaned<-wos_abstracts_frequency %>% 
+                                    filter(!word %in% stop_words$word) %>% 
+                                    filter(!grepl('[0-9]', word))   
+```
+
+
+```{r}
+# creates a new data frame that consists of the rows with the ten highest values for "n" (i.e. the ten most frequently recurring words) and assigns it to a new object named "wos_top_ten"
+wos_top_ten<-wos_abstracts_frequency_cleaned %>% 
+              slice_max(n, n=10)
+```
+
+```{r, echo=F}
+wos_top_ten %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
+  deferRender = TRUE,
+  scrollY = 350,
+  scrollX = 350,
+  dom = "t",
+  scroller = TRUE,
+  fixedColumns = list(leftColumns = 3)
+))
+```
+
+```{r}
+# creates bar chart of word frequencies based on "wos_top_ten" and assigns to new object named "wos_frequency_graph'
+wos_frequency_graph<-
+  ggplot(data=wos_top_ten)+
+    geom_col(aes(x=word, y=n))+
+    labs(title="Ten Most Frequent Words in Abstracts of Publications on Climate + Art",
+         caption = "Source: Web of Science", 
+         x="", 
+         y="Frequency")
+```
+
+```{r}
+# creates bar chart of word frequency data in "wos_top_ten" where words (on the x-axis) are arrayed in ascending order of frequency, and frequency (n) is represented on the Y axis; modified graph is assigned back to "wos_frequency_graph"
+wos_frequency_graph<-
+  ggplot(data=wos_top_ten)+
+   geom_col(aes(x=reorder(word, n), y=n))+
+    labs(title="Ten Most Frequent Words in Abstracts of Publications on Climate + Art",
+         caption = "Source: Web of Science", 
+         x="", 
+         y="Frequency")
+```
+
+
+```{r}
+# inverts axes of "wos_frequency_graph" and assigns the result to a new object named "wos_frequency_graph_inverted
+wos_frequency_graph_inverted<-
+   wos_frequency_graph+
+    coord_flip()
+```
+
+**Word Cloud**
+
+```{r}
+# make word cloud based on word frequency information from "wos_abstracts_frequency_cleaned"
+wordcloud2(data = wos_abstracts_frequency_cleaned, minRotation = 0, maxRotation = 0, ellipticity = 0.6)
+```
 
 ## Automating Data Processing Tasks
 
