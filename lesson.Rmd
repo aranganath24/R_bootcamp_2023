@@ -738,7 +738,7 @@ processed_temperature_data_list
 
 As an exercise, try and extract a given dataset from ```processed_temperature_data_list``` using the indexing method we discussed above. Additionally, see if you can assign names to the list elements in ```processed_temperature_data_list```. 
 
-# Part 2: Applied Data Analysis
+# Part 2: Applied Data Work in R
 
 The material in Part 1 was not intended as a comprehensive introduction to the R programming language. Its goal, rather, was to present some ideas, concepts, and tools that can serve as a general foundation for working with data in R. Now that we have this basic foundation, we'll turn in this section to a more applied exploration of some actual datasets. Our goal here is to introduce you to some useful functions that will allow you to explore and begin making sense of actual datasets in R. 
 
@@ -1180,11 +1180,66 @@ wordcloud2(data = wos_abstracts_frequency_cleaned, minRotation = 0, maxRotation 
 
 ## Automating Data Processing Tasks
 
+```{r}
+# write function to take input WOS dataset, select the "Authors", "Article Title", "Source Title", and "Language" columns, rename "Article Title" column to "Article and rename "Source Title" column to "Source", and then subset English language papers; the function is assigned to an object named "wos_clean_function"
+wos_clean_function<-function(input_dataset){
+  modified_dataset<-input_dataset %>% 
+                      select(Authors, "Article Title", "Source Title", Language) %>% 
+                      rename("Article"="Article Title",
+                             "Source"="Source Title") %>% 
+                      filter(Language=="English")
+  return(modified_dataset)
+}
+
+```
+
+```{r}
+# apply "wos_clean_function" to all list elements in "wos_file_list" and assign the new list of modified data frames to a new object named "processed_wos_list"
+processed_wos_list<-map(wos_file_list, wos_clean_function)
+```
+
+```{r}
+# print contents of "processed_wos_list"
+processed_wos_list
+```
+
+
+```{r}
+# extract one of the list elements from "processed_wos_list"
+processed_wos_list[[3]]
+```
+
 ## Data Transfer Part 2: Exporting Data
 
-### Exporting Visualizations
+### Exporting a data frame
 
-### Exporting Datasets
+### Exporting Multiple data frames
+
+```{r}
+# Removes the ".csv" suffix from the strings in "wos_files" and then assigns the modified character vector to a new object named "base_names"
+base_names<-str_remove(wos_files, ".csv")
+```
+
+```{r}
+# appends the suffix "_modified.csv" to the strings in the "base_names" character vector, and assigns the resulting character vector to a new object named "processed_wos_list_names"
+processed_wos_list_names<-paste0(base_names, "_modified.csv")
+```
+
+```{r}
+# prints contents of "processed_wos_list_names"
+processed_wos_list_names
+```
+
+```{r}
+# uses the walk2 function to iteratively apply the "write_csv" function, using the data frames in "processed_wos_list" and the file names in "processed_wos_list_names" as arguments; the files are written out to the working directory
+walk2(processed_wos_list, processed_wos_list_names, write_csv)
+```
+
+The code above takes the first dataset in ```processed_wos_list``` and the first desired filename in ```processed_wos_list_names```, and uses these as arguments to the ```write_csv``` function, which results in a new CSV file written to the working directory that contains the first data frame in ```processed_wos_list``` that is named after the first string element in ```processed_wos_list_names``` ("ClimateAndArt_01_modified.csv"); it then takes the second second dataset in ```processed_wos_list``` and the second desired filename in ```processed_wos_list_names```, and uses these as arguments to the ```write_csv``` function, which results in a new CSV file written to the working directory that contains the second data frame in ```processed_wos_list``` that is named after the second string element in ```processed_wos_list_names``` ("ClimateAndArt_02_modified.csv"); and so on for the other data frames and specified file names. 
+
+Check your working directory to make sure that all 13 of the modified files have been written out to disk. 
+
+### Exporting other objects (i.e. visualizations)
 
 # R Tools for Reproducibility and Communication
 
