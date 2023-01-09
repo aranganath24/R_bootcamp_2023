@@ -1083,6 +1083,231 @@ oecd_countries %>% datatable(extensions=c("Scroller", "FixedColumns"), options =
 ```
 
 
+```{r}
+# Extracts observations for which cgrev (central government revenue as % of gdp)>40, and assigns to object named "high_revenues"
+high_revenues<-pt_copy %>% filter(cgrev>40) %>% 
+                              relocate(country, cgrev)
+                        
+```
+
+```{r, echo=F}
+high_revenues %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
+  deferRender = TRUE,
+  scrollY = 350,
+  scrollX = 350,
+  dom = "t",
+  scroller = TRUE,
+  fixedColumns = list(leftColumns = 3)
+))
+```
+
+
+```{r}
+# Extracts observations for which the "catho80" variable is less than or equal to 50
+minority_catholic<-pt_copy %>% filter(catho80<=50) %>% 
+                               relocate(country, catho80)
+```
+
+```{r, echo=F}
+minority_catholic %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
+  deferRender = TRUE,
+  scrollY = 350,
+  scrollX = 350,
+  dom = "t",
+  scroller = TRUE,
+  fixedColumns = list(leftColumns = 3)
+))
+```
+
+```{r}
+# Extracts federal OECD countries (where oecd=1 AND federal=1) and assigns to a new object named "oecd_federal_countries"
+oecd_federal_countries<-pt_copy %>% filter(oecd==1 & federal==1) %>% 
+                                      relocate(country, oecd, federal)
+```
+
+```{r, echo=F}
+oecd_federal_countries %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
+  deferRender = TRUE,
+  scrollY = 350,
+  scrollX = 350,
+  dom = "t",
+  scroller = TRUE,
+  fixedColumns = list(leftColumns = 3)
+))
+```
+
+```{r}
+# Extracts observations that are in Africa ("africa") OR in Asia/Europe ("asiae) and assigns to an object named "asia_europe_africa"
+asia_europe_africa<-pt_copy %>% filter(continent=="africa"|continent=="asiae") %>% 
+                                  relocate(continent)
+```
+
+```{r}
+# Prints contents of "asia_europe_africa"
+asia_europe_africa %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
+  deferRender = TRUE,
+  scrollY = 350,
+  scrollX = 350,
+  dom = "t",
+  scroller = TRUE,
+  fixedColumns = list(leftColumns = 3)
+))
+```
+
+Filtering for observations that do NOT meet a condition:
+
+```{r}
+# Extracts all non-Africa observations and assigns to object named "pt_copy_sans_africa"
+pt_copy_sans_africa<-pt_copy %>% filter(continent!="africa") %>% relocate(continent)
+```
+
+```{r}
+# Prints contents of "pt_copy_sans_africa"
+pt_copy_sans_africa %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
+  deferRender = TRUE,
+  scrollY = 350,
+  scrollX = 350,
+  dom = "t",
+  scroller = TRUE,
+  fixedColumns = list(leftColumns = 3)
+))
+```
+
+### Exploratory visualization using ggplot2
+
+**Bar Charts**
+
+```{r}
+# filters Africa observations
+pt_africa<-pt_copy %>% 
+            filter(continent=="africa")
+```
+
+```{r}
+# Creates a bar chart of the "cgexp" variable (central government expenditure as a share of GDP) for the Africa observations and assigns the plot to an object named "cgexp_africa"
+cgexp_africa<-pt_africa %>% 
+  drop_na(cgexp) %>% 
+  ggplot()+
+  geom_col(aes(x=country, y=cgexp))+
+  labs(
+    title="Central Govt Expenditure as Pct of GDP for Select African Countries (1990-1998 Average)",
+    x="Country Name", 
+    y="CGEXP")+
+  theme(plot.title=element_text(hjust=0.5),
+        axis.text.x = element_text(angle = 90))
+```
+
+```{r}
+# prints contents of cgexp_africa
+cgexp_africa
+```
+
+```{r}
+cgexp_africa_ascending<-
+  pt_africa %>% 
+  drop_na(cgexp) %>% 
+  ggplot()+
+  geom_col(aes(x=reorder(country, cgexp), y=cgexp))+
+  labs(
+    title="Central Govt Expenditure as Pct of GDP for Select African Countries (1990-1998 Average)",
+    x="Country Name", 
+    y="CGEXP")+
+  theme(plot.title=element_text(hjust=0.5),
+        axis.text.x = element_text(angle = 90))
+```
+
+```{r}
+cgexp_africa_descending<-
+  pt_africa %>% 
+  drop_na(cgexp) %>% 
+  ggplot()+
+  geom_col(aes(x=reorder(country, -cgexp), y=cgexp))+
+  labs(
+    title="Central Govt Expenditure as Pct of GDP for Select African Countries (1990-1998 Average)",
+    x="Country Name", 
+    y="CGEXP")+
+  theme(plot.title=element_text(hjust=0.5),
+        axis.text.x = element_text(angle = 90))
+```
+
+```{r}
+cgexp_africa_ascending_inverted<-cgexp_africa_ascending+
+                                    coord_flip()
+```
+
+**Scatterplots**
+
+```{r}
+# Creates scatterplot with "cgexp" variable on x-axis and "trade" variiable on y-axis and assigns to object named "scatter_cgexp_trade"
+scatter_cgexp_trade<-
+  pt_copy %>% 
+  drop_na(cgexp) %>% 
+  ggplot()+
+  geom_point(aes(x=cgexp, y=trade))+
+  labs(title="Trade Share of GDP \nas a function of\n Central Govt Expenditure (1990-1998 Average) ", 
+       x="Central Government Expenditure (Pct of GDP)", y="Overall Trade (Pct of GDP)")+
+  theme(plot.title=element_text(hjust=0.5)) 
+```
+
+```{r}
+# prints contents of "scatter_cgexp_trade"
+scatter_cgexp_trade
+```
+
+```{r}
+# Creates scatterplot with "cgexp" variable on x-axis and "trade" variable on y-axis, and uses different color points for different continents; plot is assigned to object named "scatter_cgexp_trade_grouped"
+scatter_cgexp_trade_grouped<-
+  pt_copy %>% 
+  drop_na(cgexp) %>% 
+  ggplot()+
+  geom_point(aes(x=cgexp, y=trade, color=continent))+
+  labs(title="Trade Share of GDP \nas a function of\n Central Govt Expenditure (1990-1998 Average) ", 
+       x="Central Government Expenditure (Pct of GDP)", y="Overall Trade (Pct of GDP)")+
+  theme(plot.title=element_text(hjust=0.5)) 
+
+```
+
+
+```{r}
+# prints contents of "scatter_cgexp_trade_grouped"
+scatter_cgexp_trade_grouped
+```
+
+```{r}
+# Creates continent-level subplots for scatterplot, using facets; assigns plot to new object named "scatter_cgexp_trade_facets"
+scatter_cgexp_trade_facets<-
+  ggplot(data = pt_copy) + 
+  geom_point(mapping = aes(x = cgexp, y = trade)) + 
+  facet_wrap(~ continent, nrow = 2)
+```
+
+
+```{r}
+# prints contents of "scatter_cgexp_trade_facets"
+scatter_cgexp_trade_facets
+```
+
+
+```{r, fig.cap="test"}
+# Creates scatterplot with "cgexp" variable on x-axis and "trade" variiable on y-axis, adds line of best fit; plot assigned to object named "scatter_cgexp_trade_line"
+scatter_cgexp_trade_line<-
+  pt_copy %>% 
+  drop_na(cgexp) %>% 
+  ggplot()+
+  geom_point(aes(x=cgexp, y=trade))+
+  geom_smooth(aes(x=cgexp, y=trade), method="lm")+
+  labs(title="Trade Share of GDP \nas a function of\n Central Govt Expenditure (1990-1998 Average) ", 
+       x="Central Government Expenditure (Pct of GDP)", y="Overall Trade (Pct of GDP)")+
+  theme(plot.title=element_text(hjust=0.5)) 
+
+```
+
+
+```{r}
+# Prints contents of "scatter_cgexp_trade_line"
+scatter_cgexp_trade_line
+```
+
 ## Text Data Processing, Manipulation, and Visualization
 
 ```{r}
