@@ -259,6 +259,7 @@ While the examples above were very simple, we can assign virtually any R code, a
 Below, consider a simple example of an object, named ```our_location``` that has been assigned a non-numeric value. It's value is a string, or textual information:
 
 ```{r}
+# assigns text string "Boulder, CO" to 
 our_location<-"Boulder, CO"
 ```
 
@@ -307,7 +308,7 @@ arbitrary_values
 It is possible to carry out mathematical operations with numeric vectors; for instance, let's say that we want to double the values in the ```arbitrary_values``` vector; to do so, we can simply multiply ```arbitrary_values``` by 2, which yields a new vector where each numeric element is twice the corresponding element in ```arbitrary_values```. Below, we'll create a new vector that doubles the values in ```arbitrary_values```, assign it to a new object named ```arbitrary_values_2x```, and print the contents of ```arbitrary_values_2x```:
 
 ```{r}
-# creates a new vector that doubles the values in "arbitrary_values" and assigns it to a new object named 
+# creates a new vector that doubles the values in "arbitrary_values" and assigns it to a new object named
 "arbitrary_values_2x"
 arbitrary_values_2x<-arbitrary_values*2
 
@@ -318,6 +319,7 @@ arbitrary_values_2x
 Now, let's say we want to add different vectors together; the code below creates a new vector by adding together ```arbitrary_values``` and ```arbitrary_values_2x```:
 
 ```{r}
+# adds "arbitrary_values" vector and "arbitrary_values_2x" vector
 arbitrary_values + arbitrary_values_2x
 ```
 
@@ -606,6 +608,7 @@ This is manageable with a collection of only four Fahrenheit values, but would q
 Let's first assign our Fahrenheit temperature values to a numeric vector object named ```fahrenheit_input_vector```: 
 
 ```{r}
+# makes a vector out of Fahrenheit values we want to convert, and assigns it to a new object named "fahrenheit_input_vector"
 fahrenheit_input_vector<-c(45.6, 95.9, 67.8, 43)
 ```
 
@@ -788,7 +791,31 @@ pt_cloud<-read_csv("https://www.dropbox.com/s/iczslf52s8bzku2/persson_tabellini_
 
 ### reading in data from an R package
 
-WOSR
+```{r}
+# creates WOS session identifier and assigns to object named "sid"
+sid<-auth(username=NULL, password=NULL)
+```
+
+```{r}
+# Creates string for WOS query
+wos_query<-'TS = ("climate" & "art") AND PY = (2015-2016)'
+```
+
+```{r}
+# Pulls data from WOS API based on wos_query and assigns to object named "wos_api_climate_art"
+wos_api_climate_art<-pull_wos(wos_query, sid=sid)
+```
+
+```{r}
+# checks class of "wos_api_climate_art"
+class(wos_api_climate_art)
+```
+
+```{r}
+# prints contents of "wos_api_climate_art"
+wos_api_climate_art
+```
+
 
 ### extracting data from the web
 
@@ -816,6 +843,7 @@ pt_copy
 ```
 
 ```{r}
+# 
 View(pt_copy)
 ```
 
@@ -896,6 +924,17 @@ crosstab_federal_continent<-pt_copy %>% tabyl(federal, continent)
 ```{r}
 # bring the "country" column to the front of the dataset
 pt_copy<-pt_copy %>% relocate(country)
+```
+
+```{r, echo=F}
+pt_copy %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
+  deferRender = TRUE,
+  scrollY = 350,
+  scrollX = 350,
+  dom = "t",
+  scroller = TRUE,
+  fixedColumns = list(leftColumns = 3)
+))
 ```
 
 ```{r}
@@ -1203,6 +1242,7 @@ cgexp_africa
 ```
 
 ```{r}
+# Creates a bar chart of the "cgexp" variable (central government expenditure as a share of GDP) for the Africa observations; countries are on the x axis and arrayed in ascending order with respect to the cgexp variable, which is on the y-axis; plot is assigned to an object named "cgexp_africa_ascending"
 cgexp_africa_ascending<-
   pt_africa %>% 
   drop_na(cgexp) %>% 
@@ -1217,6 +1257,7 @@ cgexp_africa_ascending<-
 ```
 
 ```{r}
+# Creates a bar chart of the "cgexp" variable (central government expenditure as a share of GDP) for the Africa observations; countries are on the x axis and arrayed in descending order with respect to the cgexp variable, which is on the y-axis; plot is assigned to an object named "cgexp_africa_descending"
 cgexp_africa_descending<-
   pt_africa %>% 
   drop_na(cgexp) %>% 
@@ -1231,6 +1272,7 @@ cgexp_africa_descending<-
 ```
 
 ```{r}
+# creates a sideways bar chart using the "coord_flip" function and assigns it to a new object named "cgexp_africa_ascending_inverted"  
 cgexp_africa_ascending_inverted<-cgexp_africa_ascending+
                                     coord_flip()
 ```
@@ -1337,6 +1379,12 @@ wos_abstracts_frequency<-wos_abstracts_tokenized %>%
 ```
 
 ```{r}
+# prints contents of "wos_abstracts_frequency"
+wos_abstracts_frequency
+```
+
+
+```{r}
 # prints "stop_words" (part of the "tidytext" package)
 stop_words
 ```
@@ -1366,16 +1414,6 @@ wos_top_ten %>% datatable(extensions=c("Scroller", "FixedColumns"), options = li
 ))
 ```
 
-```{r}
-# creates bar chart of word frequencies based on "wos_top_ten" and assigns to new object named "wos_frequency_graph'
-wos_frequency_graph<-
-  ggplot(data=wos_top_ten)+
-    geom_col(aes(x=word, y=n))+
-    labs(title="Ten Most Frequent Words in Abstracts of Publications on Climate + Art",
-         caption = "Source: Web of Science", 
-         x="", 
-         y="Frequency")
-```
 
 ```{r}
 # creates bar chart of word frequency data in "wos_top_ten" where words (on the x-axis) are arrayed in ascending order of frequency, and frequency (n) is represented on the Y axis; modified graph is assigned back to "wos_frequency_graph"
@@ -1438,6 +1476,11 @@ processed_wos_list[[3]]
 
 ### Exporting a data frame
 
+```{r} 
+# exports pt_africa object to working directory
+write_csv(pt_africa, "pt_africa.csv")
+```
+
 ### Exporting Multiple data frames
 
 ```{r}
@@ -1465,6 +1508,26 @@ The code above takes the first dataset in ```processed_wos_list``` and the first
 Check your working directory to make sure that all 13 of the modified files have been written out to disk. 
 
 ### Exporting other objects (i.e. visualizations)
+
+```{r}
+# exports "scatter_cgexp_trade_grouped" to working directory as png file
+ggsave("africa_bar.png", cgexp_africa_ascending_inverted, width=10, height=5)
+```
+
+```{r}
+# exports "scatter_cgexp_trade_grouped" to working directory as pdf file
+ggsave("africa_bar.pdf", cgexp_africa_ascending_inverted, width=10, height=5)
+```
+
+```{r}
+# Uses graphics device to export "scatter_cgexp_trade_grouped" and "cgexp_africa_ascending_inverted" to the working directory as a single PDF file named "workshop_visualizations"
+pdf("workshop_visualizations.pdf", width=12, height=5)
+scatter_cgexp_trade_grouped
+cgexp_africa_ascending_inverted
+dev.off()
+```
+
+
 
 # R Tools for Reproducibility and Communication
 
