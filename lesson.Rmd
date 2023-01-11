@@ -27,6 +27,20 @@ library(wordcloud2)
 
 # Introduction
 
+In this tutorial, we'll explore important principles and tools for working with data in R. Its goal is not to provide a comprehensive introduction to the R language, but to provide a practical and example-driven discussion that serves as a starting point for your own exploration. Topics covered include:
+
+* R as a calculator
+* Object/Variable assignment
+* Data structures
+* Writing basic custom functions
+* Iteration using the *purrr* package
+* Importing and exporting data from R
+* Functions for wrangling, visualizing, and processsing numeric data
+* Functions for working with and visualizing text data
+* Automating basic data workflows using custom functions and iteration
+
+At the start of the session, please [download the workshop data](https://www.dropbox.com/sh/wv6yqtw98umsrto/AACwnspy4wR2ER6jI90YB2dra?dl=0). 
+
 # Preliminaries
 
 In this preliminary section, we'll cover basic information that will help you to get started with RStudio.
@@ -1300,7 +1314,7 @@ oecd_countries %>% datatable(extensions=c("Scroller", "FixedColumns"), options =
 ))
 ```
 
-Let's take another example. Let's use the ```filter()``` function to extract all observations for which the "cgrev" (central government revenue as a share of GDP) exceeds 40. We'll assign the 
+Let's take another example. Let's use the ```filter()``` function to extract all observations for which the "cgrev" (central government revenue as a share of GDP) exceeds 40. We'll assign the observations that satisfy this condition to a new object named ```high_revenues```:
 
 ```{r}
 # Extracts observations for which cgrev (central government revenue as % of gdp)>40, and assigns to object named "high_revenues"
@@ -1308,6 +1322,12 @@ high_revenues<-pt_copy %>% filter(cgrev>40) %>%
                               relocate(country, cgrev)
                         
 ```
+
+```{r}
+# Views "high_revenues" in data viewer
+high_revenues
+```
+
 
 ```{r, echo=F}
 high_revenues %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
@@ -1320,11 +1340,17 @@ high_revenues %>% datatable(extensions=c("Scroller", "FixedColumns"), options = 
 ))
 ```
 
+Let's try another example. Let's subset observations from ```pt_copy``` for which the Catholic share of the population in 1980 ("catho80") is less than or equal to 50, and assign the filtered data to a new object named ```minority_catholic```:
 
 ```{r}
 # Extracts observations for which the "catho80" variable is less than or equal to 50
 minority_catholic<-pt_copy %>% filter(catho80<=50) %>% 
                                relocate(country, catho80)
+```
+
+```{r}
+# Views "minority_catholic" in the data viewer
+View(minority_catholic)
 ```
 
 ```{r, echo=F}
@@ -1338,10 +1364,17 @@ minority_catholic %>% datatable(extensions=c("Scroller", "FixedColumns"), option
 ))
 ```
 
+It is also possible to chain together multiple conditions as arguments to the ```filter()``` function. For example, if we want to subset observations from OECD countries that also have a federal political structure, we can use the "&" operator to specify these two conditions; we'll assign the filtered dataset to a new object named ```oecd_federal_countries```:
+
 ```{r}
 # Extracts federal OECD countries (where oecd=1 AND federal=1) and assigns to a new object named "oecd_federal_countries"
 oecd_federal_countries<-pt_copy %>% filter(oecd==1 & federal==1) %>% 
                                       relocate(country, oecd, federal)
+```
+
+```{r}
+# Views "oecd_federal_countries" in data viewer
+oecd_federal_countries
 ```
 
 ```{r, echo=F}
@@ -1355,11 +1388,19 @@ oecd_federal_countries %>% datatable(extensions=c("Scroller", "FixedColumns"), o
 ))
 ```
 
+We can use a vertical line (|) to specify "or" conditions. For example, the code below subsets observations from countries in Africa OR countries in Asia/Europe, and assigns the subsetted data to a new object named ```asia_europe_africa```:
+
 ```{r}
 # Extracts observations that are in Africa ("africa") OR in Asia/Europe ("asiae) and assigns to an object named "asia_europe_africa"
 asia_europe_africa<-pt_copy %>% filter(continent=="africa"|continent=="asiae") %>% 
                                   relocate(continent)
 ```
+
+```{r}
+# views "asia_europe_africa" in data viewer
+View(asia_europe_africa)
+```
+
 
 ```{r}
 # Prints contents of "asia_europe_africa"
@@ -1375,9 +1416,16 @@ asia_europe_africa %>% datatable(extensions=c("Scroller", "FixedColumns"), optio
 
 **Filtering for observations that do NOT meet a condition**
 
+It is also useful to know how to subset datasets to extract observations that do NOT meet a given condition. In particular, the condition "not equal to" is denoted by a "!=". For example, if we wanted to extract observations from ```pt_copy``` where the "continent" variable is NOT equal to "africa", and assign the result to a new object named ```pt_copy_sans_africa```, we can write the following:
+
 ```{r}
 # Extracts all non-Africa observations and assigns to object named "pt_copy_sans_africa"
 pt_copy_sans_africa<-pt_copy %>% filter(continent!="africa") %>% relocate(continent)
+```
+
+```{r}
+# views pt_copy_sans_africa in the data viewer
+View(pt_copy_sans_africa)
 ```
 
 ```{r}
@@ -1394,19 +1442,25 @@ pt_copy_sans_africa %>% datatable(extensions=c("Scroller", "FixedColumns"), opti
 
 ### Exploratory visualization using ggplot2
 
+R has a number of powerful visualization capabilities, but one of the most frequently used tools for data visualization in R is the *ggplot2* package, which is a party of the *tidyverse* suite. Data visualization using *ggplot2* is a vast topic; our goal here is to provide you with some basic intuition for how ggplot visualizations are constructed by developing some basic exploratory visualizations. While our treatment here focuses on bar charts and scatterplots, *ggplot* offers functions for a much wider variety of visualizations. However, bar charts and scatterplots offer a convenient way to familiarize yourself with basic *ggplot* syntax. 
+
 **Bar Charts**
+
+Let's make some simple bar charts for the African countries in ```pt_copy```. Let's say we want to make a bar chart that displays variation in the "cgexp" variable (central government expenditure as a share of GDP) for African countries. We'll begin by extracting the Africa observations from ```pt_copy``` using the ```filter()``` function, and removing any "NA" observations for this variable from the dataset using the ```drop_na()``` function:
 
 ```{r}
 # filters Africa observations
 pt_africa<-pt_copy %>% 
-            filter(continent=="africa")
+            filter(continent=="africa") %>% 
+            drop_na(cgexp)
 ```
+
+Now, let's make a basic bar chart of the "cgexp" data from ```pt_africa```, and assign it to an object named ```cgexp_africa```:
 
 ```{r}
 # Creates a bar chart of the "cgexp" variable (central government expenditure as a share of GDP) for the Africa observations and assigns the plot to an object named "cgexp_africa"
-cgexp_africa<-pt_africa %>% 
-  drop_na(cgexp) %>% 
-  ggplot()+
+cgexp_africa<-
+  ggplot(pt_africa)+
   geom_col(aes(x=country, y=cgexp))+
   labs(
     title="Central Govt Expenditure as Pct of GDP for Select African Countries (1990-1998 Average)",
@@ -1416,17 +1470,28 @@ cgexp_africa<-pt_africa %>%
         axis.text.x = element_text(angle = 90))
 ```
 
+Let's unpack the code above:
+
+* The expression ```ggplot(pt_africa)``` specifies that we want to initialize *ggplot*, and declares the dataset containing the data we want to map ("pt_africa")
+* ```geom_col()``` indicates that we want to make a bar chart. If you wanted to make a different type of chart, this function would be different. Within the ```geom_col()``` function, we indicate our desired aesthetic mapping ```aes()```; an aesthetic mapping indicates how we would like variables in the datasets to be represented on the chosen visualization. Here, the expression ```x=country, y=cgexp``` simply indicates that we want countries to be represented on the x-axis of the chart, and the "cgexp" variable to be represented on the y-axis.
+* The arguments to the ```labs()``` function (short for "labels") specify a desired title for the visualization, and x-axis and y-axis labels.
+* The arguments to the ```theme()``` function specify a desired position for the plot title, and a desired format for the x-axis labels.
+
+Note that *ggplot2* functions are chained together with a "+" sign. 
+
+Let's see what ```cgexp_africa``` looks like:
+
 ```{r}
 # prints contents of cgexp_africa
 cgexp_africa
 ```
 
+This is a nice start, but it may look a bit cleaner if we arrayed the chart in ascending order with respect to the cgexp variable. To do so, we can slightly change our aesthetic mapping to look like this: ```aes(x=reorder(country, cgexp), y=cgexp))```. This indicates that we'd still like the "cgexp" variable on the y-axis, and countries on the x-axis; however, we'd also like to order countries in ascending order with respect to the "cgexp" variable. We'll assign this modified chart to a new object named ```cgexp_africa_ascending```:
+
 ```{r}
 # Creates a bar chart of the "cgexp" variable (central government expenditure as a share of GDP) for the Africa observations; countries are on the x axis and arrayed in ascending order with respect to the cgexp variable, which is on the y-axis; plot is assigned to an object named "cgexp_africa_ascending"
 cgexp_africa_ascending<-
-  pt_africa %>% 
-  drop_na(cgexp) %>% 
-  ggplot()+
+  ggplot(pt_africa)+
   geom_col(aes(x=reorder(country, cgexp), y=cgexp))+
   labs(
     title="Central Govt Expenditure as Pct of GDP for Select African Countries (1990-1998 Average)",
@@ -1436,12 +1501,19 @@ cgexp_africa_ascending<-
         axis.text.x = element_text(angle = 90))
 ```
 
+All other apsects of the code are the same as before. Let's see what the modified chart looks like:
+
+```{r}
+# prints "cgexp_africa_ascending"
+cgexp_africa_ascending
+```
+
+If, instead of arrange the countries in asscending order with respect to the "cgexp" variable, we want to arrange them in descending order, we can simply put a "-" before "cgexp" within the aesthetic mapping; we'll assign the modified chart to a new object named ```cgexp_africa_descending```:
+
 ```{r}
 # Creates a bar chart of the "cgexp" variable (central government expenditure as a share of GDP) for the Africa observations; countries are on the x axis and arrayed in descending order with respect to the cgexp variable, which is on the y-axis; plot is assigned to an object named "cgexp_africa_descending"
 cgexp_africa_descending<-
-  pt_africa %>% 
-  drop_na(cgexp) %>% 
-  ggplot()+
+  ggplot(pt_africa)+
   geom_col(aes(x=reorder(country, -cgexp), y=cgexp))+
   labs(
     title="Central Govt Expenditure as Pct of GDP for Select African Countries (1990-1998 Average)",
@@ -1451,37 +1523,55 @@ cgexp_africa_descending<-
         axis.text.x = element_text(angle = 90))
 ```
 
+Let's see how the ```cgexp_africa_descending``` plot now looks:
+
+```{r}
+# prints contents of "cgexp_africa_descending"
+cgexp_africa_descending
+```
+
+Sometimes, you may wish to invert the axes of your charts, which you can do using the ```coord_flip()``` function. The code below takes the ```cgexp_africa_ascending``` chart we created above,  inverts the axes using ```coord_flip()```, and assigns the result to a new object named ```cgexp_africa_ascending_inverted```:
+
 ```{r}
 # creates a sideways bar chart using the "coord_flip" function and assigns it to a new object named "cgexp_africa_ascending_inverted"  
 cgexp_africa_ascending_inverted<-cgexp_africa_ascending+
                                     coord_flip()
 ```
 
+Let's see what ```cgexp_africa_ascending_inverted``` looks like:
+
+```{r}
+# prints "cgexp_africa_ascending_inverted"
+cgexp_africa_ascending_inverted
+```
+
 **Scatterplots**
+
+The syntax to make a scatterplot is fairly similar to the syntax used to create a bar chart; the main difference is that instead of using the ```geom_col()``` function to indicate that we want a bar chart, we use the ```geom_point()``` function to indicate that we want a scatterplot. The code below generates a scatterplot of the "cgexp" variable (on the x axis) and the "trade" variable (on the y-axis) for all observations in the ```pt_copy``` dataset, and assigns it to a new object named ```scatter_cgexp_trade```:
 
 ```{r}
 # Creates scatterplot with "cgexp" variable on x-axis and "trade" variiable on y-axis and assigns to object named "scatter_cgexp_trade"
 scatter_cgexp_trade<-
-  pt_copy %>% 
-  drop_na(cgexp) %>% 
-  ggplot()+
+  ggplot(pt_copy)+
   geom_point(aes(x=cgexp, y=trade))+
   labs(title="Trade Share of GDP \nas a function of\n Central Govt Expenditure (1990-1998 Average) ", 
        x="Central Government Expenditure (Pct of GDP)", y="Overall Trade (Pct of GDP)")+
   theme(plot.title=element_text(hjust=0.5)) 
 ```
 
+Let's see what ```scatter_cgexp_trade``` looks like:
+
 ```{r}
 # prints contents of "scatter_cgexp_trade"
 scatter_cgexp_trade
 ```
 
+Sometimes, you may wish to distinguish between different groups in a scatterplot. One way to do that is to assign different colors to different groups of interest. For example, if we wanted to distinguish continents in the scatterplot, we could specify ```color=continent``` in the aesthetic mapping. The code below does so, and assigns the result to a new object named ```scatter_cgexp_trade_grouped```:
+
 ```{r}
 # Creates scatterplot with "cgexp" variable on x-axis and "trade" variable on y-axis, and uses different color points for different continents; plot is assigned to object named "scatter_cgexp_trade_grouped"
 scatter_cgexp_trade_grouped<-
-  pt_copy %>% 
-  drop_na(cgexp) %>% 
-  ggplot()+
+  ggplot(pt_copy)+
   geom_point(aes(x=cgexp, y=trade, color=continent))+
   labs(title="Trade Share of GDP \nas a function of\n Central Govt Expenditure (1990-1998 Average) ", 
        x="Central Government Expenditure (Pct of GDP)", y="Overall Trade (Pct of GDP)")+
@@ -1489,33 +1579,34 @@ scatter_cgexp_trade_grouped<-
 
 ```
 
+Let's see what ```scatter_cgexp_trade_grouped``` looks like:
 
 ```{r}
 # prints contents of "scatter_cgexp_trade_grouped"
 scatter_cgexp_trade_grouped
 ```
 
+An alternative way of parsing categories is to use facets, which create separate visualizations for each of the different categories in a dataset. Below, for example, we create separate scatterplots for each continent (this is specified by the final line in the code, ```facet_wrap(~continent, nrow=2))```:
+
 ```{r}
 # Creates continent-level subplots for scatterplot, using facets; assigns plot to new object named "scatter_cgexp_trade_facets"
 scatter_cgexp_trade_facets<-
-  ggplot(data = pt_copy) + 
-  geom_point(mapping = aes(x = cgexp, y = trade)) + 
+  ggplot(pt_copy) + 
+  geom_point(aes(x = cgexp, y = trade)) + 
   facet_wrap(~ continent, nrow = 2)
 ```
-
 
 ```{r}
 # prints contents of "scatter_cgexp_trade_facets"
 scatter_cgexp_trade_facets
 ```
 
+Finally, it's important to note that it's possible to layer different geometries over each other. For example, the code below plots a scatterplot for the ```pt_copy``` dataset with the "cgexp" variable on the x axis and the trade variable on the y-axis, but also plots a line of best fit on top of the scatterplot with ```geom_smooth(aes(x=cgexp, y=trade), method="lm")```; we'll assign the resulting plot to ```scatter_cgexp_trade_line```:
 
 ```{r, fig.cap="test"}
 # Creates scatterplot with "cgexp" variable on x-axis and "trade" variiable on y-axis, adds line of best fit; plot assigned to object named "scatter_cgexp_trade_line"
 scatter_cgexp_trade_line<-
-  pt_copy %>% 
-  drop_na(cgexp) %>% 
-  ggplot()+
+  ggplot(pt_copy)+
   geom_point(aes(x=cgexp, y=trade))+
   geom_smooth(aes(x=cgexp, y=trade), method="lm")+
   labs(title="Trade Share of GDP \nas a function of\n Central Govt Expenditure (1990-1998 Average) ", 
@@ -1532,16 +1623,22 @@ scatter_cgexp_trade_line
 
 ## Text Data Processing, Manipulation, and Visualization
 
+Having learned some basic functions for processing and working with numeric data, we will now turn to a brief exploration of text data in R. We will work with the dataset we created earlier, by appending the various separate Web of Science data frames together; recall that we assigned this data frame to an object named ```ws_df_appended```:
+
 ```{r}
 # prints ws_df_appended
 ws_df_appended
 ```
+
+We will extract the paper abstracts from this dataset, and create a word-frequency table (a table that indicates how many times different words appear in a given corpus) based on the text of all of the abstracts. Such a table will give us a sense of the "keywords" used in a given scholarly literature, which will provide a window into its universe of discourse. In addition to a word frequency table, we'll also create a word cloud, which is a quick way to visualize the frequency with which various words appear in the corpus of abstracts; the word cloud will be based on the word-frequency table we initially create. 
+Let's first extract the "Abstract" column from ```ws_df_appended``` and assign it to a new object named ```wos_abstracts```:
 
 ```{r}
 # selects "Abstract" column from "ws_df_appended" and assigns to new object named "wos_abstracts"
 wos_abstracts<-ws_df_appended %>% select(Abstract)
 ```
 
+Now that we have our abstracts in a tractable data frame, we want to take each word in every abstract, and assign it to its own row; this process is known as "tokenizing" a dataset. The code below tokenizes ```wos_abstracts``` by passing it to the ```unnest_tokens()``` function; ```input=Abstract``` specifies the column containing the data to be tokenized; ```token="words"``` specifies that the unit of analysis is the word (i.e. each word in each abstract gets its own row); and ```output=word``` specifies that the name of the column in the tokenized word that contains the words is to be "word". We'll assign the tokenized dataset to a new object named ```wos_abstracts_tokenized```:
 
 ```{r}
 # Tokenizes "Abstract" column text by word; assigns tokenized dataset (with words in "word" column) to a new object named "wos_abstracts_tokenized"
@@ -1551,23 +1648,38 @@ wos_abstracts_tokenized<-wos_abstracts %>%
                                         output=word)
 ```
 
+Let's print ```wos_abstracts_tokenized``` to the console to observe its structure. You can also view it in the data viewer:
 
 ```{r}
-# generates frequency table from "wos_abstracts_tokenized", and assigns 
+# prints contents of "wos_abstracts_tokenized"
+wos_abstracts_tokenized
+```
+
+Now, we can use the ```count()``` function to generate the rough draft of a word frequency table. Below, we take the  ```wos_abstracts_tokenized``` object, and then pass it to the ```count()``` function, which parses the "word" column in ```wos_abstracts_tokenized```, and counts up the number of times each word occurs. The resulting frequency table is assigned to a new object named ```wos_abstracts_frequency```:
+
+```{r}
+# generates frequency table from "wos_abstracts_tokenized", and assigns it to a new object named "wos_abstracts_frequency"
 wos_abstracts_frequency<-wos_abstracts_tokenized %>% 
                           count(word, sort=TRUE)
 ```
+
+Let's print the contents of ```wos_abstracts_frequency```, which you can also observe in the data viewer:
 
 ```{r}
 # prints contents of "wos_abstracts_frequency"
 wos_abstracts_frequency
 ```
 
+When looking through ```wos_abstracts_frequency```, you'll notice that many of the words are common or mundane words (i.e. "the") that don't provide much information, or numbers, which also typically don't provide much information in the context of a text analysis. We'll therefore remove numbers and "common" words from ```wos_abstracts_frequency```. 
+
+These "common" words are often referred to in the text analysis lexicon as "stop words", and text analysis packages typically provide data frames or vectors stored with these words (you can also create your own objects with stop words, if necessary). We'll use a data frame of stop words from the *tidytext* package, assigned to the ```stop_words``` package, which we'll print below:
 
 ```{r}
 # prints "stop_words" (part of the "tidytext" package)
 stop_words
 ```
+
+Below, we'll remove stop words contained in ```stop_words```, and any rows containing numeric digits, from ```wos_abstracts_frequency_cleaned``` using the filter function, and assign the result to a new object named ```wos_abstracts_frequency_cleaned```:
 
 ```{r}
 # cleans "wos_abstracts_frequency" by removing stop words and removing numbers
@@ -1576,11 +1688,23 @@ wos_abstracts_frequency_cleaned<-wos_abstracts_frequency %>%
                                     filter(!grepl('[0-9]', word))   
 ```
 
+The expression that reads ```filter(!word %in% stop_words$word)``` can be translated as saying "remove any rows in ```wos_abstracts_frequency``` for which a word in the 'word' column contains one of the stop words in the ```stop_words``` object". The expression that reads ``` filter(!grepl('[0-9]', word))``` can be translated as saying "remove any rows in ```wos_abstracts_frequency``` in which the corresponding 'word' column contains a numeric digit." The ```grepl()``` function is used for pattern matching, which you can read more about in the documentation (```?grepl```).
+
+You can now view the ```wos_abstracts_frequency_cleaned``` object in the data viewer, and confirm that digits and stop words have been removed. Peruse the table, and get a sense of what the most frequently recurring words in the corpus are. 
+
+Let's now use ```wos_abstracts_frequency_cleaned``` to make a quick visualization using *ggplot2*. First, ```wos_abstracts_frequency_cleaned``` is too large to plot with a bar chart, but it may be useful to make a plot of the most frequently recurring words. In this case, we'll plot the ten most frequently recurring words in ```wos_abstracts_frequency_cleaned```. We'll first use the ```slice_max()``` function so extract the rows in ```wos_abstracts_frequency_cleaned``` with the ten highest value of "n", and assign the result to a new object named ```wos_top_ten```:
 
 ```{r}
 # creates a new data frame that consists of the rows with the ten highest values for "n" (i.e. the ten most frequently recurring words) and assigns it to a new object named "wos_top_ten"
 wos_top_ten<-wos_abstracts_frequency_cleaned %>% 
               slice_max(n, n=10)
+```
+
+Let's view ```wos_top_ten``` in the data viewer:
+
+```{r}
+# views "wos_top_ten" in data viewer
+View(wos_top_ten)
 ```
 
 ```{r, echo=F}
@@ -1594,6 +1718,7 @@ wos_top_ten %>% datatable(extensions=c("Scroller", "FixedColumns"), options = li
 ))
 ```
 
+Now, let's make a bar chart using the data in ```wos_top_ten``` and assign it to a new object named ```wos_frequency_graph```:
 
 ```{r}
 # creates bar chart of word frequency data in "wos_top_ten" where words (on the x-axis) are arrayed in ascending order of frequency, and frequency (n) is represented on the Y axis; modified graph is assigned back to "wos_frequency_graph"
@@ -1606,6 +1731,14 @@ wos_frequency_graph<-
          y="Frequency")
 ```
 
+Let's print its contents:
+
+```{r}
+# prints contents of "wos_frequency_graph"
+wos_frequency_graph
+```
+
+And, let's also create a graph with inverted axes using the ```coord_flip``` function, and assign it to a new object named ```wos_frequency_graph_inverted```:
 
 ```{r}
 # inverts axes of "wos_frequency_graph" and assigns the result to a new object named "wos_frequency_graph_inverted
@@ -1614,7 +1747,14 @@ wos_frequency_graph_inverted<-
     coord_flip()
 ```
 
+```{r}
+# prints contents of "wos_frequency_graph_inverted"
+wos_frequency_graph_inverted
+```
+
 **Word Cloud**
+
+Another useful tool of exploratory text analysis is the word cloud. We can use the *wordcloud2* package's ```wordcloud2()``` function to quickly make a word cloud out of the data from our cleaned word frequency table, ```wos_abstracts_frequency_cleaned```:
 
 ```{r}
 # make word cloud based on word frequency information from "wos_abstracts_frequency_cleaned"
@@ -1622,6 +1762,12 @@ wordcloud2(data = wos_abstracts_frequency_cleaned, minRotation = 0, maxRotation 
 ```
 
 ## Automating Data Processing Tasks
+
+It is useful to have a sense of how to write some basic custom functions to automate basic data processing tasks. Let's say, for instance, that we have a list of multiple data frames, and want to apply similar procedures to all of those data frames. How can we do so in an efficient and programmatic fashion that saves time?
+
+Let's return to our list of separate Web of Science data frames, ```wos_file_list```, which we created earlier. Print the contents of ```wos_file_list``` if you need a reminder of what it looks like. 
+
+Now, let's say for each data frame in the list, we want to select the "Authors", "Article Title", "Source Title" and "Language" columns; rename the "Article Title" column to "Article" and rename the "Source Title" column to "Source"; and then subset the English language observations. Instead of applying these changes to all of the data frames individually, we can write a function to perform these tasks, which we'll assign to a new object named ```wos_clean_function()```:
 
 ```{r}
 # write function to take input WOS dataset, select the "Authors", "Article Title", "Source Title", and "Language" columns, rename "Article Title" column to "Article and rename "Source Title" column to "Source", and then subset English language papers; the function is assigned to an object named "wos_clean_function"
@@ -1636,16 +1782,21 @@ wos_clean_function<-function(input_dataset){
 
 ```
 
+Now, we'll iteratively apply the ```wos_clean``` function  to all of the list elements in ```wos_file_list``` using the ```map()``` function. The code below applies the ```wos_clean_function``` function to the first element of ```wos_file_list``` and deposits the transformed dataset as the first element of a new list; it then applies the ```wos_clean_function``` to the second element of ```wos_file_list``` and deposits the transformed dataset as the second element of a new list; and so on. The list containing the transformed data frames is assigned to a new list named ```processed_wos_list```:
+
 ```{r}
 # apply "wos_clean_function" to all list elements in "wos_file_list" and assign the new list of modified data frames to a new object named "processed_wos_list"
 processed_wos_list<-map(wos_file_list, wos_clean_function)
 ```
+
+Let's print the contents of ```processed_wos_list``` to check that the data frames have indeed been transformed in accordance with the specifications of the function:
 
 ```{r}
 # print contents of "processed_wos_list"
 processed_wos_list
 ```
 
+Recall that we can also extract a given list element using double-bracket notation. For example, we can extract the third element of ```processed_wos_list``` with the following:
 
 ```{r}
 # extract one of the list elements from "processed_wos_list"
@@ -1654,29 +1805,52 @@ processed_wos_list[[3]]
 
 ## Data Transfer Part 2: Exporting Data
 
+You'll often need to get data out of R once you're finished with your analysis, and this section reviews some techniques to do so. 
+
 ### Exporting a data frame
+
+Let's say you have a data frame in R that you'd like to export as a CSV file to your working directory. You can use the ```write_csv()``` function; below, we export the data frame assigned to the ```pt_africa``` object we created above. The first argument of ```write_csv()``` is the name of the relevant data frame object, and the second argument ("pt_africa.csv") is the desired file name for the exported object:
 
 ```{r} 
 # exports pt_africa object to working directory
 write_csv(pt_africa, "pt_africa.csv")
 ```
 
+Once the code runs, check to make sure that there is a file named "pt_africa.csv" exported to your working directory. 
+
 ### Exporting Multiple data frames
+
+Let's say we have multiple data frames that we'd like to efficiently export. For example, after generating our list of transformed Web of Science data frames (```processed_wos_list```), let's say we want to export all of the data frames to our working directory. Our first step is to create a vector of desired file names. 
+
+Let's first take the initial ```wos_files``` vector, and remove the ".csv" extension; we'll assign the result to a new object named ```base_names```:
 
 ```{r}
 # Removes the ".csv" suffix from the strings in "wos_files" and then assigns the modified character vector to a new object named "base_names"
 base_names<-str_remove(wos_files, ".csv")
 ```
 
+Let's print the contents of ```base_names```:
+
+```{r}
+# prints contents of "base_names"
+base_names
+```
+
+We'll now use the ```paste0()``` function to append the extension "_modified.csv" to the base names, so that we now that we've modified the files:
+
 ```{r}
 # appends the suffix "_modified.csv" to the strings in the "base_names" character vector, and assigns the resulting character vector to a new object named "processed_wos_list_names"
 processed_wos_list_names<-paste0(base_names, "_modified.csv")
 ```
 
+Let's now print our final vector of file names:
+
 ```{r}
 # prints contents of "processed_wos_list_names"
 processed_wos_list_names
 ```
+
+Now, we'll use the ```walk2()``` function to iteratively write out the data frames in ```processed_wos_list``` to disk, using the names specified in ```processed_wos_list_names```:
 
 ```{r}
 # uses the walk2 function to iteratively apply the "write_csv" function, using the data frames in "processed_wos_list" and the file names in "processed_wos_list_names" as arguments; the files are written out to the working directory
@@ -1689,15 +1863,21 @@ Check your working directory to make sure that all 13 of the modified files have
 
 ### Exporting other objects (i.e. visualizations)
 
+To export *ggplot* objects, you can use the package's ```ggsave()``` function. For example, if we wanted to save the visualization associated with ```cgexp_africa_ascending_inverted```, we could use the following, where the first argument is the desired file name for the exported visualization, the second argument is the name of the corresponding object, and the optional "width" and "height" arguments specify the desired dimensions for the exported visualization:
+
 ```{r}
 # exports "scatter_cgexp_trade_grouped" to working directory as png file
 ggsave("africa_bar.png", cgexp_africa_ascending_inverted, width=10, height=5)
 ```
 
+If you want a different file format, simply change the extension. For example, if we want to save the file as a "pdf" file instead of "png", simply change the extension of the exported file's dired file name to ".pdf":
+
 ```{r}
 # exports "scatter_cgexp_trade_grouped" to working directory as pdf file
 ggsave("africa_bar.pdf", cgexp_africa_ascending_inverted, width=10, height=5)
 ```
+
+If you have several visualizations that you want to save in a single file, you can use a graphics device. Below, we use a PDF graphics device to create a single PDF file (named "workshop_visualizations.pdf") that contains the ```scatter_cgexp_trade_grouped``` and ```cgexp_africa_ascending_inverted``` visualizations. When using a graphics device, always remember to turn it off (using ```dev.off()```) after your file has been exported. 
 
 ```{r}
 # Uses graphics device to export "scatter_cgexp_trade_grouped" and "cgexp_africa_ascending_inverted" to the working directory as a single PDF file named "workshop_visualizations"
@@ -1707,9 +1887,6 @@ cgexp_africa_ascending_inverted
 dev.off()
 ```
 
-
-
-# R Tools for Reproducibility and Communication
 
 
 
