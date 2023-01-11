@@ -751,24 +751,54 @@ Typically, the first step when working with research data in R Studio is to load
 
 ### Reading in a dataset from a directory on your computer
 
-Often (especially when a dataset is of tractable size), you will have the dataset you would like to analyze stored on a directory on your computer. In order to read in a dataset from a computer directory 
+Often (especially when a dataset is of tractable size), you will have the dataset you would like to analyze stored on a directory on your computer. In order to read in a dataset from a computer directory, you can use the ```read_csv()``` function (provided it is stored as a CSV; if the file type is different, than the import function would be different as well), and the pass dataset's file path as an argument to the function. Typically, you will want to assign the dataset you read in to a new R object:
 
 ```{r}
-# Reads in Persson/Tabellini Data from local directory
+# Reads in Persson/Tabellini Data from local directory, and assigns it to new object named "pt"
 pt<-read_csv("data/pt/persson_tabellini_workshop.csv")
 ```
 
-### reading in multiple datasets from your disk
+If you'd like to view the contents of the dataset, pass it to the R Studio data viewer:
 
 ```{r}
-# print relevant file names
+# views "pt" data frame in R Studio data viewer
+View(pt)
+```
+
+```{r}
+pt %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
+  deferRender = TRUE,
+  scrollY = 350,
+  scrollX = 350,
+  dom = "t",
+  scroller = TRUE,
+  fixedColumns = list(leftColumns = 3)
+))
+```
+
+We'll be working more with this dataset below; if you'd like to learn more about the dataset's various variables, see the [codebook](https://www.dropbox.com/s/gn4d9mnqp8pds68/persson_tabellini_codebook.pdf?dl=0). The data was originally collected by the political economists Torsten Persson and Guido Tabellini for their book on *The Econmic Effects of Constitutions.*
+
+### Reading in multiple datasets from your disk
+
+Sometimes, your data is spread out over multiple files. For example, you may have multiple CSV files with data stored on disk, which you want to read into R at one-go, instead of loading in multiple files individually. 
+
+To do so, we can use the list data structure to hold all of the desired files, and use the ```map()``` function we learned about above to iteratively read these files into our R environment. 
+
+The first step is to use the ```list.files()``` function to create a character vector of the file names we want to read in; if all of the files you want to read in are already in your working directory, you don't need to supply any arguments to the ```list.files()``` function. If the files are stored in another location, you can specify the relevant file path as an argument to ```list.files()```. In the case below, the individual files we want to read in are thirteen Web of Science datasets (which were generated using the "climate" + "art" search parameters); these files are in the "wos" directory within the "data" subdirectory of the working directory:
+
+```{r}
+# print relevant file names, which are stored in the data/wos subdirectory
 wos_files<-list.files("data/wos")
 ```
+
+Let's now print the contents of "wos_files" and observe the file names":
 
 ```{r}
 # prints contents of "wos_files"
 wos_files
 ```
+
+Now that we have our file names, we can iteratively pass them through the ```read_csv()``` function, and deposit the files as data frames in a list: 
 
 ```{r}
 # Iteratively reads in all individual WOS files from the "data/wos" directory and assigns it to an object named "wos_file_list"
@@ -776,60 +806,94 @@ setwd("data/wos")
 wos_file_list<-map(wos_files, read_csv)
 ```
 
+The code above takes the first file name in ```wos_files()``` and then passes it to the ```read_csv()``` function and deposits the file as the first data frame in a new list; it then takes the second file name in ```wos_files()``` and then passes it to the ```read_csv()``` function and deposits that file as the second data frame in the list; and so on. The list containing all of the files is assigned to a new object named ```wos_file_list```; we'll print the contents below:
+
+```{r}
+# prints contents of "wos_file_list"
+wos_file_list
+```
+
+We will work with the separate data frames in ```wos_file_list``` later in the tutorial. 
+
+In some cases, however, if the different data frames read into a list all have the same structure (i.e. same variable names and number of variables), it is also sometimes useful to append the different data frames in a list together into one data frame. It is easy to carry out this operation using the ```bind_rows()``` function, which takes as its argument the name of the list containing the data frames whose rows we want to append together. Below, we'll assign the consolidated data frame created through this appending operation to a new object named ```ws_df_appended```:
+
 ```{r}
 # appends data frames in "wos_file_list" into one data frame and assigns it to a new object named "ws_df_appended"
 ws_df_appended<-bind_rows(wos_file_list)
 ```
 
-### reading in a dataset from cloud storage
+You can now view the appended data frame in the R Studio data viewer by passing ```ws_df_appended``` to the ```View()``` function. In addition to working with the files separately, we will also use the consolidated ```ws_df_appended``` data frame to introduce some basic text analysis functions in R. 
+
+### Reading in a dataset from cloud storage
+
+At this point, we have all of the data we need for subsequent sections loaded in our R environment. However, before proceeding, it's worth noting some additional methods of reading in data into R.
+
+If you store your data on the Cloud using a standard storage service such as Dropbox, you can simply extract the URL to the data from your service provider, and pass it as an argument to a data transfer function in R such as ```read_csv()```: 
 
 ```{r}
-# Reads in PT dataset from dropbox and assigns it to a new object named "pt_cloud"
+# Reads in PT dataset from Dropbox and assigns it to a new object named "pt_cloud"
 pt_cloud<-read_csv("https://www.dropbox.com/s/iczslf52s8bzku2/persson_tabellini_workshop.csv?dl=1")
 ```
 
+The code above reads in the Persson-Tabellini dataset that is stored on a Dropbox account straight into R using its URL as an argument, and assigns it to a new object named ```pt_cloud```. If you view ```pt_cloud``` in the data viewer, you'll notice that the dataset is exactly the same as the one assigned to the ```pt``` object. 
 
-### reading in data from an R package
+### Reading in data from an R package
+
+Many R packages allow you to import data directly into your R environment via an Application Programming Interface (API), which is essentially a device that organizations use to provide access to their data. The R package *wosr*, for example, allows users to leverage the Web of Science API to directly import data from the Web of Science. Even after importing the Web of Science data into R via *wosr*, it takes a bit of effort to get the data into usable shape, so we won't make use of data imported from *wosr* later in the tutorial. Nevertheless, it can be instructive to see how this process works. For more details on *wosr* functions used below, inspect the relevant documentation by typing a "? before the function name in your console (or from a script). 
+
+The first step is to set your authorization credentials; because CU has a Web of Science subscription (which you can automatically access from campus or through a campus VPN), we can simply set the user name and password to NULL in the session identifier, which is assigned to a new object named ```sid```:
 
 ```{r}
 # creates WOS session identifier and assigns to object named "sid"
 sid<-auth(username=NULL, password=NULL)
 ```
 
+Now, we'll create a string that represents our Web of Science query; this text string is assigned to a new object name ```wos_query```:
+
 ```{r}
 # Creates string for WOS query
 wos_query<-'TS = ("climate" & "art") AND PY = (2015-2016)'
 ```
+
+Now, we'll pass ```wos_query``` and ```sid``` as arguments to the ```pull_wos()``` function, which is the *wosr* function that allows for query-based data extraction from the Web of Science API. We'll assign the data to a new object named ```wos_api_climate_art```:
 
 ```{r}
 # Pulls data from WOS API based on wos_query and assigns to object named "wos_api_climate_art"
 wos_api_climate_art<-pull_wos(wos_query, sid=sid)
 ```
 
+Now that the data has been downloaded, we'll check the class of ```wos_api_climate_art```:
+
 ```{r}
 # checks class of "wos_api_climate_art"
 class(wos_api_climate_art)
 ```
+
+Note that the data is stored as a list, and we can print its contents below: 
 
 ```{r}
 # prints contents of "wos_api_climate_art"
 wos_api_climate_art
 ```
 
+### Reading data from websites
 
-### extracting data from the web
+If a dataset of interest is hosted on the web, it is usually straighforward to use the relevant URL to load the data directly into your R environment. For instance, consider this [dataset from CU Scholar](https://scholar.colorado.edu/concern/datasets/k643b228n). If we want to load the dataset into R directly, we can identify the relevant [download link](https://scholar.colorado.edu/concern/parent/k643b228n/file_sets/76537257b) by hovering over the blue "Download the file" button", and pass it as an argument to the ```read_csv()``` function (with ".csv" appended ): 
 
 ```{r}
 # Reads in published dataset from CU Scholar and assigns it to a new object named "green_space_CUScholar"
 green_space_CUScholar<-read_csv("https://scholar.colorado.edu/downloads/76537257b.csv")
 ```
 
-[Landing Page](https://scholar.colorado.edu/concern/datasets/k643b228n)
-[Download Link](https://scholar.colorado.edu/concern/parent/k643b228n/file_sets/76537257b)
+Above, we assigned the data from that CU Scholar landing page to a new object named ```green_space_CUScholar```, which you can now view in the R Studio data viewer with ```View(green_space_CUScholar)```. 
 
-## Numeric Data Processing, Manipulation, and Visualization
+## Numeric Data Processing, Wrangling, and Visualization
+
+In this section, we will survey some useful functions (primarily from the *dplyr* package) for wrangling and processing numeric data. We will also introduce *ggplot2*, which is the most popular visualization package in R. We will demonstrate these functions using the Persson-Tabellini dataset on political-economic data (```pt```). 
 
 ### Make a copy of the dataset
+
+We'll start by making a copy of the ```pt``` object, by assigning it to a new object named ```pt_copy```. We'll use ```pt_copy``` when exploring the dataset, which ensures that we do not make inadvertent changes to our original ```pt``` data frame, and can always refer back to it when needed. Keeping a "clean" version of the data, and carrying out analysis tasks on a copy of this dataset, is good data management practice. 
 
 ```{r}
 # Make a copy of the dataset so we don't alter the original dataset; then, view
@@ -837,13 +901,17 @@ green_space_CUScholar<-read_csv("https://scholar.colorado.edu/downloads/76537257
 pt_copy<-pt
 ```
 
+We can go ahead and print the contents of ```pt_copy```, which, at this point, is identical to ```pt```:
+
 ```{r}
 # Print contents of "pt_copy"
 pt_copy
 ```
 
+We can also view it in the data viewer:
+
 ```{r}
-# 
+# Views "pt_copy" in data frame
 View(pt_copy)
 ```
 
@@ -860,6 +928,8 @@ pt_copy %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
 
 ### Summary Statistics
 
+Once you have a dataset loaded into R, one of the first things you'll want to do is likely to generate a table of summary statistics. A quick way to do that is to use the ```describe()``` function from the *psych* package. Below, we'll generate summary statistics for the ```pt_copy``` dataset by passing it to the ```describe()``` function, and assign the table of summary statistics to a new object named ```pt_copy_summarystats1```. We'll then view it in the data viewer:
+
 ```{r}
 # Generate summary statistics for "pt_copy" and assign to new object named "pt_copy_summarystats1"
 pt_copy_summarystats1<-describe(pt_copy)
@@ -869,7 +939,6 @@ pt_copy_summarystats1<-describe(pt_copy)
 # View contents of "pt_copy_summarystats1" in data viewer
 View(pt_copy_summarystats1)
 ```
-
 
 ```{r, echo=F}
 pt_copy_summarystats1 %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
@@ -882,48 +951,85 @@ pt_copy_summarystats1 %>% datatable(extensions=c("Scroller", "FixedColumns"), op
 ))
 ```
 
+While having a simple table of summary statistics is often a useful starting point, it is often useful to generate group-level summary statistics, where summary statistics are presented for different subgroups in the dataset. One way to generate group summary statistics is to use the ```describeBy()``` function (also from the *psych* package), where the first argument is the data frame you would like to generate group-level summary statistics for, and the second argument is the column that contains the relevant groups. Below, we generate summary statistics for ```pt_copy``` parsed out by the different continents in the "continent" column. The expression ```pt_copy$continent``` indicates that the groups with respect to which we want to calcualte the summary statistics is in the "continent" column of the ```pt_copy``` data frame. More generally, we can explicitly refer to columns in an R data frame using this dollar-sign notation, where the expression before the dollar sign refers to the data frame object, and the expression after refers to the name of the column. 
+
+The ```describeBy()``` function will produce a list that contains summary statistics for different groups as list elements. Below, we'll assign the list of group summary statistics to a new object named ```summary_stats_by_continent```:
+
 ```{r}
 # Creates summary statistics for each continent grouping, and puts results in list named "summary_stats_by_continent"
 summary_stats_by_continent<-describeBy(pt_copy, pt_copy$continent)
 ```
+
+Now, let's say we want to extract the summary statistics for Africa, one of the continent categories in the "continent" column. We can do so using the double-bracket notation we discussed above:
 
 ```{r}
 # Accessing continent-level summary statistics for africa from the "summary_stats_by_continent" list
 summary_stats_by_continent[["africa"]]
 ```
 
+Recall that we can assign list elements that we extract from a list to their own object, which allows us to conveniently retrieve it whenever it is needed. Below, we'll assign the summary statistics for Africa to a new object named ```africa_summary```:
+
 ```{r}
 # Group-level summary statistics can be assigned to their own object for easy retrieval
 africa_summary<-summary_stats_by_continent[["africa"]]
 ```
 
+Another convenient way to retrieve group-level summary statistics is through the ```group_by()``` function in the *dplyr* package. First, we'll run the code below, and assign it to a new object named ```trade_age_by_continent```:
 
 ```{r}
 # Generate a table that displays summary statistics for trade at the continent level and assign to object named "trade_age_by_continent"
-trade_age_by_continent<-pt_copy %>% group_by(continent) %>% 
-                                    summarise(meanTrade=mean(trade),sdTrade=sd(trade),
-                                              meanAge=mean(age), sdAge=sd(age),
-                                              n=n())
+trade_age_by_continent<-pt_copy %>% 
+                          group_by(continent) %>% 
+                            summarise(meanTrade=mean(trade),sdTrade=sd(trade),
+                                      meanAge=mean(age), sdAge=sd(age),
+                                      n=n())
 ```
+
+Now, let's print the contents of ```trade_age_by_continent```:
 
 ```{r}
 # prints contents of "trade_age_by_continent"
 trade_age_by_continent
 ```
 
+Let's now unpack the code that created this table. We started with the ```pt_copy``` data frame, and then used ```group_by(continent)``` to declare that subsequent calculations should be performed at the continent-level; then, within the ```summarise()``` function, we defined the column names we wanted to use in the group-level summary table, and how those variables are to be calculated. For example, ```meanTrade=mean(trade)``` indicates that we want the first column to be named "meanTrade", which is to be calculated by taking the mean of the "trade" variable for each continent grouping. After that, ```sdTrade=sd(trade)``` indicates that we want the second column to be named "sdTrade", which is to be calculated by taking the standard deviation of the "trade" variable for each continent grouping. And so on. Note that ```n=n()``` indicates that we want the final column, named "n", to provide information about the number of observations in each continent-level grouping. 
+
+You might have noticed a mysterious symbol in the above code that comes immediately after ```pt_copy```, and immediately after ```group_by(continent)```. This symbol is known as a “pipe” (```%>%```). The pipe operator effectively takes the contents to its left, and then uses these contents as an input to the code on its right. Above, the pipe takes the contents of ```pt_copy``` on its left, and then feeds this data into the ```group_by()``` function on the right; then, after grouping the data by continent, it feeds this grouped data on its left into the ```summarise()``` function on its right.  We will use the pipe operator throughout the lesson to chain together functions in this manner. 
+
+Finally, in addition to calculating summary statistics and group-level summary statistics, another useful way to explore your data is to generate simple crosstabs that show the breakdown of one variable with respect to the other. The code below uses the ```tabyl()``` function from the *janitor* package to compute a crosstab between the "federal" variable (i.e. this variable takes on the value of 1 if a country has a federal structure of government, and 0 if it's a unitary government) and the "continent" variable; it assigns the crosstab to a new object named ```crosstab_federal_continent```:
 
 ```{r}
 # Creates cross-tab showing the breakdown of federal/non federal across continents
 crosstab_federal_continent<-pt_copy %>% tabyl(federal, continent)
 ```
 
+Let's print the contents of ```crosstab_federal_continent```:
+
+```{r}
+# prints contents of "crosstab_federal_continent"
+crosstab_federal_continent
+```
+
+This tells us, for instance, that among Latin American countries, 19 had a unitary government, and 4 had federal structure of government. 
+
 ### Basic Data Cleaning and Preparation Tasks
 
+After getting a sense of your data by computing some summary statistics and running some crosstabs, you'll often have a sense of how you would like to clean or transform your data for analysis. This section briefly describes some functions that are useful for these basic data-preparation tasks. 
+
 **Rearranging Columns**
+
+We can manipulate the order of the columns in a dataset using the ```relocate``` function. For example, the code below uses the ```relocate()``` function to shift the "country" column to the front of the dataset, and then assigns this change back to ```pt_copy``` to update the object:
 
 ```{r}
 # bring the "country" column to the front of the dataset
 pt_copy<-pt_copy %>% relocate(country)
+```
+
+You can confirm that the change has been implemented by viewing ```pt_copy``` in the data viewer:
+
+```{r}
+# Views "pt_copy" in data viewer
+View(pt_copy)
 ```
 
 ```{r, echo=F}
@@ -937,9 +1043,16 @@ pt_copy %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
 ))
 ```
 
+You can specify more than one argument to the ```relocate``` function. For example, in the code below, passing the "country", "list", "trade", and "oecd" variables/columns to the ```relocate()``` function will make "country" the first column, "list" the second column, "trade" the third column, and so on. 
+
 ```{r}
 # bring the "country", "list", "trade", "oecd" columns to the front of the dataset
 pt_copy<-pt_copy %>% relocate(country, list, trade, oecd)
+```
+
+```{r}
+# Views updated "pt_copy" data frame in data viewer
+View(pt_copy)
 ```
 
 ```{r, echo=F}
@@ -955,18 +1068,25 @@ pt_copy %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
 
 **Renaming variables**
 
+In order to rename variables, we can use the ```rename()``` function, as below. The code below renames the existing "list" variable to "party_list", which is more descriptive, and assigns the change back to the ```pt_copy``` object. 
 
 ```{r}
 ## Renaming a variable (renames "list" to "party_list")
 pt_copy<-pt_copy %>% rename(party_list=list)
 ```
 
+Check the ```pt_copy``` data frame in the viewer to ensure that the change has been made. 
+
 **Sorting a dataset in ascending or descending order with respect to a variable**
+
+It is often useful to sort a data frame in ascending or descending order with respect to a given variable. The code below sorts the ```pt_copy``` data frame in ascending order with respect to the "trade" variable using the ```arrange()``` function:
 
 ```{r}
 # sorting in ascending (low to high) order with respect to the "trade" variable
 pt_copy<-pt_copy %>% arrange(trade)
 ```
+
+If, instead, you want to sort the dataset in descending order with respect to the "trade" variable, pass the name of the variable to the ```desc()``` function within the ```arrange()``` function, as below:
 
 ```{r}
 # sorting in descending (high to low) order with respect to the "trade" variable
@@ -975,10 +1095,19 @@ pt_copy<-pt_copy %>% arrange(desc(trade))
 
 **Creating new variables based on existing variables**
 
+Depending on your research question and empirical strategy, it is often useful or necessary to create new variables in your dataset, based on existing variables. To do so, we can use *dplyr's* ```mutate()``` function. The code below, for example, uses the ```mutate()``` function to create a new variable, named "non_catholic_80", that is computed by subtracting the existing "catho80" variable from 100; for convenience, the "country", "catho80", and newly created "non_catholic_80" variables are all moved to the front of the dataset using the ```relocate()``` function:
+
 ```{r}
 # Create new variable named "non_catholic_80" that is calculated by substracting the Catholic share of the population in 1980 ("catho80") from 100  and relocates "country", "catho80", and the newly created "non_catholic_80" to the front of the dataset
 pt_copy<-pt_copy %>% mutate(non_catholic_80=100-catho80) %>% 
                      relocate(country, catho80, non_catholic_80)
+```
+
+You can view the updated ```pt_copy``` data frame to confirm that the new variable has been created:
+
+```{r}
+# views updated "pt_copy" data frame in R Studio data viewer
+View(pt_copy)
 ```
 
 ```{r, echo=F}
@@ -995,11 +1124,20 @@ pt_copy %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
 
 **Selecting or Deleting Variables**
 
+Sometimes, you will have a dataset with many variables, and to make things more tractable, you'll want to select only the variables that are relevant to your analysis. You can explicitly select desired variables using the ```select()``` function from *dplyr*. The code below selects the "country", "cgexp", "cgrev", "trade", and "federal" columns from ```pt_copy```, and then assigns this selection to a new object named ```pt_copy_selection```:
+
 ```{r}
 # Selects "country", "cgexp", "cgrev", and "trade" variables from the "pt_copy" dataset and assigns the selection to a new object named "pt_copy_selection"
-pt_copy_selection<-pt_copy %>% select(country, cgexp, cgrev, trade, federal)
+pt_copy_selection<-pt_copy %>% 
+                    select(country, cgexp, cgrev, trade, federal)
 ```
 
+When you view the ```pt_copy_selection``` object in the data viewer, you'll see that we now have a new data frame that consists only of these variables:
+
+```{r}
+# views "pt_copy_selection" in data viewer
+View(pt_copy_selection)
+```
 
 ```{r, echo=F}
 # prints updated contents of "pt_copy"
@@ -1013,14 +1151,25 @@ pt_copy_selection %>% datatable(extensions=c("Scroller", "FixedColumns"), option
 ))
 ```
 
+Instead of selecting columns to keep, it may sometimes by easier to directly delete columns. For example, the code below deletes the "federal" variable from ```pt_copy_selection``` by passing it to the ```select()``` column with a "-" in front of it. 
+
 ```{r}
 # deletes "federal" variable from "pt_copy_selection"
 pt_copy_selection %>% select(-federal)
 ```
 
+If you want to delete multiple columns, simply specify the columns in a vector, preceded by a minus sign, that is passed to the ```select()``` function. The code below, for instance, takes the existing ```pt_copy_selection``` data frame, deletes the "federal" and "trade" columns, and assigns the result to a new object named ```pt_copy_selection_modified```:
+
 ```{r}
 # deletes "federal" and "trade" from "pt_copy_selection" and assigns it to new object named "pt_copy_selection_modified"
 pt_copy_selection_modified<-pt_copy_selection %>% select(-c(federal, trade))
+```
+
+Check the ```pt_copy_selection_modified``` data frame in the data viewer to confirm these changes:
+
+```{r}
+# views "pt_copy_selection_modified" in data viewer
+pt_copy_selection_modified
 ```
 
 ```{r, echo=F}
@@ -1037,8 +1186,11 @@ pt_copy_selection_modified %>% datatable(extensions=c("Scroller", "FixedColumns"
 
 **Recoding Variables**
 
+"Recoding" a variable refers to the process of taking an existing variable, and generating new variable(s) that represent the information from that original variable in a new way. Below, we'll consider some common recoding operations. 
+
 *Creating Dummy Variables from Continuous Numeric Variables*
 
+You may sometimes have a continuous numeric variable, but want to create a new dummy variable (a variable that takes on the value of 1 if a given condition is met, and 0 otherwise) based on that numeric variable. For example, let's say we want to create a new variable, named "trade_open" that takes on the value of 1 if the trade variable is greater than or equal to 77, and 0 otherwise. We can generate this new dummy variable using the ```mutate()``` function; within the ```mutate()``` function below, we specify that we want to create a new variable named "trade_open"; the ```ifelse()``` function specifies the desired condition (trade>=77), followed by the value the new "trade_open" variable is to take if the condition is met (1), and the value the new "trade_open" variable is to take if the condition is not met (0). In other words, we can translate ```ifelse(trade>=77, 1, 0)``` to "if trade>=77, set the 'trade_open' variable to 1, otherwise set it to 0." We'll assign the data frame with the new "trade_open" variable back to "pt_copy":
 
 ```{r}
 # Creates a new dummy variable based on the existing "trade" variable named "trade_open" (which takes on a value of "1" if "trade" is greater than or equal to 77, and 0 otherwise) and then moves the newly created variable to the front of the dataset along with "country" and "trade"; all changes are assigned to "pt_copy", thereby overwriting the existing version of "pt_copy"
@@ -1046,6 +1198,8 @@ pt_copy_selection_modified %>% datatable(extensions=c("Scroller", "FixedColumns"
 pt_copy<-pt_copy %>% mutate(trade_open=ifelse(trade>=77, 1, 0)) %>% 
                      relocate(country, trade_open, trade)
 ```
+
+View the data frame to ensure that the new variable "trade_open", recoded based on "trade", has been created:
 
 ```{r, echo=F}
 pt_copy %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
@@ -1058,9 +1212,9 @@ pt_copy %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
 ))
 ```
 
-
 *Creating categorical variables from continuous numeric variables*
 
+Sometimes, you will want to create a variable that contains categories or classifications that derive from numeric thresholds of an existing variable. For instance, let's say we want to take the existing "trade" variable, and define a new variable named "trade_level", which is set to "Low Trade" when the "trade" variable is greater than 15 and less than 50; "Intermediate_Trade" when the "trade" variable is greater than or equal to 50 and less than 100; and "High_Trade" when the "trade" variable is greater than or equal to 100. The code below creates this new "trade_level" variable using the ```mutate()``` function, and the ```case_when()``` function that maps the conditions onto the desired variable values for "trade_level" using the following syntax:
 
 ```{r}
 # Creates a new variable in the "pt_copy" dataset named "trade_level" (that is coded as "Low Trade" when the "trade" variable is greater than 15 and less than 50, coded as "Intermediate Trade" when "trade" is greater than or equal to 50 and less than 100, and coded as "High TradE" when "trade" is greater than or equal to 100), and then reorders the dataset such that "country", "trade_level", and "trade" are the first three variables in the dataset
@@ -1068,6 +1222,13 @@ pt_copy<-pt_copy %>% mutate(trade_level=case_when(trade>15 & trade<50~"Low_Trade
                                                   trade>=50 & trade<100~"Intermediate_Trade",
                                                   trade>=100~"High_Trade")) %>% 
                     relocate(country, trade_level, trade)
+```
+
+Check to see that the new "trade_level" variable has indeed been created in ```pt_copy``` according to the specifications above:
+
+```{r}
+# views updated "pt_copy" data frame in data viewer
+View(pt_copy)
 ```
 
 
@@ -1084,10 +1245,19 @@ pt_copy %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
 
 *Creating dummmy variables from categorical variables*
 
+Sometimes, you may have a categorical variable in a dataset, and want to create dummy variables based on those categories. For example, consider the "trade_level" variable we created above. Let's say we want to use the "trade_level" column to create dummy variables for each of the categories in that column. We can do so with the *fastDummies* package, which can quickly generate dummy variables for the categories in a categorical variable using the ```dummy_cols()``` function. Below, we simply take the existing ```pt_copy``` dataset, and pass the name of the categorical variable out of which we want to create the dummies ("trade_level") to the ```dummy_cols()``` function:
+
 ```{r, message=FALSE}
 # Creates dummy variables from "trade_level" column, and relocates the new dummies to the front of the dataset
 pt_copy<-pt_copy %>% dummy_cols("trade_level") %>% 
                       relocate(country, trade_level, trade_level_High_Trade, trade_level_Intermediate_Trade, trade_level_Low_Trade)
+```
+
+Let's now view the updated ```pt_copy``` data frame, with the newly created dummy variables:
+
+```{r}
+# views updated "pt_copy" in data viewer
+View(pt_copy)
 ```
 
 ```{r, echo=F}
@@ -1101,13 +1271,22 @@ pt_copy %>% datatable(extensions=c("Scroller", "FixedColumns"), options = list(
 ))
 ```
 
+You'll notice that there are now dummy variables corresponding to each of the categories in the categorical "trade_level" variable; for example, the "trade_level_High_Trade" dummy variable takes on the value of 1 for all observations where the "trade_level" variable is "High_Trade" and 0 otherwise; the "trade_level_Intermediate_Trade" dummy variable takes on the value of 1 for all observations where the "trade_level" variable is "Intermediate_Trade" and 0 otherwise; and so on. 
+
 **Subsetting Variables**
 
+You will often want to subset, or "filter" your datasets to extract observations that meet specified criteria. The *dplyr* packages allows you to carry out these subsetting operations with a function called ```filter()```, which takes various logical conditions as arguments. Let's say, for example, that we want to extract all of the OECD country observations from the ```pt_copy``` dataset. The "oecd" variable in ```pt_copy``` is equal to 1, for all OECD countries, and 0 for non-OECD countries. By passing the condition ```oecd==1``` to the ```filter()``` function, we can extract all OECD observations. We'll assign this data subset to a new object named ```oecd_countries```, and view it in the data viewer:
 
 ```{r}
 # Extracts OECD observations in "pt_copy" and assigns to object named "oecd_countries"
 oecd_countries<-pt_copy %>% filter(oecd==1) %>% 
                             relocate(country, oecd)
+```
+
+
+```{r}
+# views "oecd_countries" in data viewer
+View(oecd_countries)
 ```
 
 ```{r, echo=F}
@@ -1121,6 +1300,7 @@ oecd_countries %>% datatable(extensions=c("Scroller", "FixedColumns"), options =
 ))
 ```
 
+Let's take another example. Let's use the ```filter()``` function to extract all observations for which the "cgrev" (central government revenue as a share of GDP) exceeds 40. We'll assign the 
 
 ```{r}
 # Extracts observations for which cgrev (central government revenue as % of gdp)>40, and assigns to object named "high_revenues"
@@ -1193,7 +1373,7 @@ asia_europe_africa %>% datatable(extensions=c("Scroller", "FixedColumns"), optio
 ))
 ```
 
-Filtering for observations that do NOT meet a condition:
+**Filtering for observations that do NOT meet a condition**
 
 ```{r}
 # Extracts all non-Africa observations and assigns to object named "pt_copy_sans_africa"
