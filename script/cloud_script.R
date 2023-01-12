@@ -498,14 +498,14 @@ pt_copy_sans_africa<-pt_copy %>% filter(continent!="africa") %>% relocate(contin
 
 # filters Africa observations
 pt_africa<-pt_copy %>% 
-  filter(continent=="africa")
+  filter(continent=="africa") %>% 
+  drop_na(cgexp)
 
 
 # Creates a bar chart of the "cgexp" variable (central government expenditure as a share of GDP) 
 # for the Africa observations and assigns the plot to an object named "cgexp_africa"
-cgexp_africa<-pt_africa %>% 
-  drop_na(cgexp) %>% 
-  ggplot()+
+cgexp_africa<-
+  ggplot(pt_africa)+
   geom_col(aes(x=country, y=cgexp))+
   labs(
     title="Central Govt Expenditure as Pct of GDP for Select African Countries (1990-1998 Average)",
@@ -524,9 +524,7 @@ cgexp_africa
 # respect to the cgexp variable, which is on the y-axis; plot is assigned to an object named 
 # "cgexp_africa_ascending"
 cgexp_africa_ascending<-
-  pt_africa %>% 
-  drop_na(cgexp) %>% 
-  ggplot()+
+  ggplot(pt_africa)+
   geom_col(aes(x=reorder(country, cgexp), y=cgexp))+
   labs(
     title="Central Govt Expenditure as Pct of GDP for Select African Countries (1990-1998 Average)",
@@ -546,9 +544,7 @@ cgexp_africa_ascending
 # respect to the cgexp variable, which is on the y-axis; plot is assigned to an object named 
 # "cgexp_africa_descending"
 cgexp_africa_descending<-
-  pt_africa %>% 
-  drop_na(cgexp) %>% 
-  ggplot()+
+  ggplot(pt_africa)+
   geom_col(aes(x=reorder(country, -cgexp), y=cgexp))+
   labs(
     title="Central Govt Expenditure as Pct of GDP for Select African Countries (1990-1998 Average)",
@@ -575,9 +571,7 @@ cgexp_africa_ascending_inverted
 # Creates scatterplot with "cgexp" variable on x-axis and "trade" variiable on 
 # y-axis and assigns to object named "scatter_cgexp_trade"
 scatter_cgexp_trade<-
-  pt_copy %>% 
-  drop_na(cgexp) %>% 
-  ggplot()+
+  ggplot(pt_copy)+
   geom_point(aes(x=cgexp, y=trade))+
   labs(title="Trade Share of GDP \nas a function of\n Central Govt Expenditure (1990-1998 Average) ", 
        x="Central Government Expenditure (Pct of GDP)", y="Overall Trade (Pct of GDP)")+
@@ -592,9 +586,7 @@ scatter_cgexp_trade
 # uses different color points for different continents; plot is assigned to object named 
 # "scatter_cgexp_trade_grouped"
 scatter_cgexp_trade_grouped<-
-  pt_copy %>% 
-  drop_na(cgexp) %>% 
-  ggplot()+
+  ggplot(pt_copy)+
   geom_point(aes(x=cgexp, y=trade, color=continent))+
   labs(title="Trade Share of GDP \nas a function of\n Central Govt Expenditure (1990-1998 Average) ", 
        x="Central Government Expenditure (Pct of GDP)", y="Overall Trade (Pct of GDP)")+
@@ -620,9 +612,7 @@ scatter_cgexp_trade_facets
 # Creates scatterplot with "cgexp" variable on x-axis and "trade" variiable on y-axis, 
 # adds line of best fit; plot assigned to object named "scatter_cgexp_trade_line"
 scatter_cgexp_trade_line<-
-  pt_copy %>% 
-  drop_na(cgexp) %>% 
-  ggplot()+
+  ggplot(pt_copy)+
   geom_point(aes(x=cgexp, y=trade))+
   geom_smooth(aes(x=cgexp, y=trade), method="lm")+
   labs(title="Trade Share of GDP \nas a function of\n Central Govt Expenditure (1990-1998 Average) ", 
@@ -645,7 +635,6 @@ wos_abstracts<-ws_df_appended %>% select(Abstract)
 
 # Views "wos_abstracts" in viewer
 View(wos_abstracts)
-
 
 # Tokenizes "Abstract" column text by word; assigns tokenized dataset (with words in "word" column) 
 # to a new object named "wos_abstracts_tokenized"
@@ -785,6 +774,9 @@ pdf("workshop_visualizations.pdf", width=12, height=5)
 scatter_cgexp_trade_grouped
 cgexp_africa_ascending_inverted
 dev.off()
+
+
+
 
 
 
